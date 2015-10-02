@@ -71,98 +71,100 @@ namespace dwarf
         TemplateAlias       = 0x43
     };
 
-    enum class Attribute
+    enum class Attribute : uint16_t
     {
-        AbstractOrigin,     // Instance of inline subprogram
-        Accessibility,      // C++ declarations, base classes & inherited members
-        AddressClass,       // Pointer or reference or function ptr type
-        Allocated,          // Allocation status of type
-        Artificial,         // Marks an object or type not actually declared in the source
-        Associated,         // Association status
-        BaseTypes,          // Marks a primitive data type of a compilation unit
-        BinaryScale,        // Binary scale factor for fixed-point type
-        BitOffset,          // Base type or data member bit offset
-        BitSize,            // Base type or data member bit size
-        BitStride,          // Array element, subrange or enum stride
-        ByteStride,         // Type or object size (bytes)
-        CallColumn,         // Column position of inlined subroutine call
-        CallFile,           // File of inlined subroutine call
-        CallLine,           // Line number of inlined subroutine call
-        CallingConvention,  // Subprogram calling convention
-        CommonReference,    // Common block usage
-        CompDir,            // Compilation directory
-        ConstValue,         // Constant, enum literal, template value
-        ConstExpr,          // Compile-time constant object or function
-        ContainingType,     // Containing type of pointer-to-member type
-        Count,              // Elements of subrange type
-        DataBitOffset,      // 
-        DataLocation,       // Indirection to actual data
-        DataMemberLocation, // Data member & inherited member location
-        DecimalScale,       // Decimal scale factor
-        DecimalSign,        // Decimal sign representation
-        DeclColumn,         // Column positino of source declaration
-        DeclFile,           // File containing source declaration
-        DeclLine,           // Line number of source declaration
-        Declaration,        // Incomplete, non-defining or separate entity declartion
-        DefaultValue,       // Default value of a parameter
-        Description,        // Artificial name or description
-        DigitCount,         // Digit count for packed decimal or numeric string type
-        Discr,              // Disriminant of variant part
-        DiscrList,          // List of discriminant values
-        Elemental,          // Elemental property of a subroutine
-        Encoding,           // Encoding of a base type
-        Endianity,          // Endianity of data
-        EntryPC,            // Entry address of module init or (inlined-)subprogram
-        EnumClass,          // Type-safe enumeration definition
-        Explicit,           // Explicit property of a member function
-        Extension,          // Previous namespace extension or original namespace
-        External,           // External subroutine or variable
-        FrameBase,          // Subroutine frame base address
-        Friend,             // Friend relationship
-        HighPC,             // Contiguous range of code addresses
-        IdentifierCase,     // Identifier case rule
-        Import,             // Imported declaration or unit; namespace alias; using declaration or directive
-        Inline,             // Abstract instance or inlined subroutine
-        IsOptional,         // Optional parameter
-        Language,           // Programming language
-        LinkageName,        // Object file linkage name of an entity
-        Location,           // Data object location
-        LowPC,              // Code address or range of addresses
-        LowerBound,         // Lower bound of subrange
-        MacroInfo,          // Macro information
-        MainSubprogram,     // Main or starting subprogram or unit containing such
-        Mutable,            // Mutable property of member data
-        Name,               // Name of declaration or path name of compilation source
-        NamelistItem,       // Namelist item
-        ObjectPointer,      // Object (this, self) pointer of member interface
-        Ordering,           // Array row/column ordering 
-        PictureString,      // Picture string for numeric string type
-        Priority,           // Module priority
-        Producer,           // Compiler identification
-        Prototyped,         // Subroutine prototype
-        Pure,               // Pure property of a subroutine
-        Ranges,             // Non-contiguous range of code addresses
-        Recursive,          // Recursive property of a subroutine
-        ReturnAddress,      // Subroutine return address save location
-        Segment,            // Addressing information
-        Sibling,            // Debugging information entry relationship
-        Small,              // Scale factor for fixed-point type
-        Signature,          // Type signature
-        Specification,      // Incomplete, non-defining or separate declaration corresponding to a declaration
-        StartScope,         // Object or type declaration
-        StaticLink,         // Location of uplevel frame
-        StmtList,           // Line number information for unit
-        StringLength,       // String length of string type
-        ThreadsScaled,      // UPC array bound THREADS scale factor
-        Trampoline,         // Target subroutine
-        Type,               // Type of declaration or subroutine return
-        UpperBound,         // Upper bound of subrange
-        UseLocation,        // Member location for pointer to member type
-        UseUTF8,            // Compilation unit uses UTF-8 strings
-        VariableParameter,  // Non-constant parameter flag
-        Virtuality,         // Virtuality indication
-        Visibility,         // Visibility of declaration
-        VTableElemLocation  // Virtual function vtable slot
+        AbstractOrigin     = 0x31, // Instance of inline subprogram
+        Accessibility      = 0x32, // C++ declarations, base classes & inherited members
+        AddressClass       = 0x33, // Pointer or reference or function ptr type
+        Allocated          = 0x4E, // Allocation status of type
+        Artificial         = 0x34, // Marks an object or type not actually declared in the source
+        Associated         = 0x4F, // Association status
+        BaseTypes          = 0x35, // Marks a primitive data type of a compilation unit
+        BinaryScale        = 0x5B, // Binary scale factor for fixed-point type
+        BitOffset          = 0x0C, // Base type or data member bit offset
+        BitSize            = 0x0D, // Base type or data member bit size
+        BitStride          = 0x2E, // Array element, subrange or enum stride
+        ByteSize           = 0x0B, // Data object or data type size
+        ByteStride         = 0x51, // Type or object size (bytes)
+        CallColumn         = 0x57, // Column position of inlined subroutine call
+        CallFile           = 0x58, // File of inlined subroutine call
+        CallLine           = 0x59, // Line number of inlined subroutine call
+        CallingConvention  = 0x36, // Subprogram calling convention
+        CommonReference    = 0x1A, // Common block usage
+        CompDir            = 0x1B, // Compilation directory
+        ConstValue         = 0x1C, // Constant, enum literal, template value
+        ConstExpr          = 0x6C, // Compile-time constant object or function
+        ContainingType     = 0x1D, // Containing type of pointer-to-member type
+        Count              = 0x37, // Elements of subrange type
+        DataBitOffset      = 0x6B, // 
+        DataLocation       = 0x50, // Indirection to actual data
+        DataMemberLocation = 0x38, // Data member & inherited member location
+        DecimalScale       = 0x5C, // Decimal scale factor
+        DecimalSign        = 0x5E, // Decimal sign representation
+        DeclColumn         = 0x39, // Column positino of source declaration
+        DeclFile           = 0x3A, // File containing source declaration
+        DeclLine           = 0x3B, // Line number of source declaration
+        Declaration        = 0x3C, // Incomplete, non-defining or separate entity declartion
+        DefaultValue       = 0x1E, // Default value of a parameter
+        Description        = 0x5A, // Artificial name or description
+        DigitCount         = 0x5F, // Digit count for packed decimal or numeric string type
+        Discr              = 0x15, // Disriminant of variant part
+        DiscrList          = 0x3D, // List of discriminant values
+        DiscrValue         = 0x16,
+        Elemental          = 0x66, // Elemental property of a subroutine
+        Encoding           = 0x3E, // Encoding of a base type
+        Endianity          = 0x65, // Endianity of data
+        EntryPC            = 0x52, // Entry address of module init or (inlined-)subprogram
+        EnumClass          = 0x6D, // Type-safe enumeration definition
+        Explicit           = 0x63, // Explicit property of a member function
+        Extension          = 0x54, // Previous namespace extension or original namespace
+        External           = 0x3F, // External subroutine or variable
+        FrameBase          = 0x40, // Subroutine frame base address
+        Friend             = 0x41, // Friend relationship
+        HighPC             = 0x12, // Contiguous range of code addresses
+        IdentifierCase     = 0x42, // Identifier case rule
+        Import             = 0x18, // Imported declaration or unit; namespace alias; using declaration or directive
+        Inline             = 0x20, // Abstract instance or inlined subroutine
+        IsOptional         = 0x21, // Optional parameter
+        Language           = 0x13, // Programming language
+        LinkageName        = 0x6E, // Object file linkage name of an entity
+        Location           = 0x02, // Data object location
+        LowPC              = 0x11, // Code address or range of addresses
+        LowerBound         = 0x22, // Lower bound of subrange
+        MacroInfo          = 0x43, // Macro information
+        MainSubprogram     = 0x6A, // Main or starting subprogram or unit containing such
+        Mutable            = 0x61, // Mutable property of member data
+        Name               = 0x03, // Name of declaration or path name of compilation source
+        NamelistItem       = 0x44, // Namelist item
+        ObjectPointer      = 0x64, // Object (this, self) pointer of member interface
+        Ordering           = 0x09, // Array row/column ordering 
+        PictureString      = 0x60, // Picture string for numeric string type
+        Priority           = 0x45, // Module priority
+        Producer           = 0x25, // Compiler identification
+        Prototyped         = 0x27, // Subroutine prototype
+        Pure               = 0x67, // Pure property of a subroutine
+        Ranges             = 0x55, // Non-contiguous range of code addresses
+        Recursive          = 0x68, // Recursive property of a subroutine
+        ReturnAddress      = 0x2A, // Subroutine return address save location
+        Segment            = 0x46, // Addressing information
+        Sibling            = 0x01, // Debugging information entry relationship
+        Small              = 0x5D, // Scale factor for fixed-point type
+        Signature          = 0x69, // Type signature
+        Specification      = 0x47, // Incomplete, non-defining or separate declaration corresponding to a declaration
+        StartScope         = 0x2C, // Object or type declaration
+        StaticLink         = 0x48, // Location of uplevel frame
+        StmtList           = 0x10, // Line number information for unit
+        StringLength       = 0x19, // String length of string type
+        ThreadsScaled      = 0x62, // UPC array bound THREADS scale factor
+        Trampoline         = 0x56, // Target subroutine
+        Type               = 0x49, // Type of declaration or subroutine return
+        UpperBound         = 0x2F, // Upper bound of subrange
+        UseLocation        = 0x4A, // Member location for pointer to member type
+        UseUTF8            = 0x53, // Compilation unit uses UTF-8 strings
+        VariableParameter  = 0x4B, // Non-constant parameter flag
+        Virtuality         = 0x4C, // Virtuality indication
+        Visibility         = 0x17, // Visibility of declaration
+        VTableElemLocation = 0x4D  // Virtual function vtable slot
     };
 
     enum class BaseType : uint8_t
