@@ -11,7 +11,7 @@ namespace dwarf
     {
         ArrayType           = 0x01,
         ClassType           = 0x02,
-        EntryPoint          = 0x03,
+        EntryPoint          = 0x03, // An alternate entry point
         EnumerationType     = 0x04,
         FormalParameter     = 0x05,
         ImportedDeclaration = 0x08,
@@ -31,7 +31,7 @@ namespace dwarf
         CommonBlock         = 0x1A,
         CommonInclusion     = 0x1B,
         Inheritance         = 0x1C,
-        InlinedSubroutine   = 0x1D,
+        InlinedSubroutine   = 0x1D, // A particular inlined instance of a subroutine or function
         Module              = 0x1E,
         PtrToMemberType     = 0x1F,
         SetType             = 0x20,
@@ -48,7 +48,7 @@ namespace dwarf
         Namelist            = 0x2B,
         NamelistItem        = 0x2C,
         PackedType          = 0x2D,
-        Subprogram          = 0x2E,
+        Subprogram          = 0x2E, // A subroutine or function
         TemplateTypeParam   = 0x2F,
         TemplateValueParam  = 0x30,
         ThrownType          = 0x31,
@@ -105,7 +105,64 @@ namespace dwarf
         DeclLine,           // Line number of source declaration
         Declaration,        // Incomplete, non-defining or separate entity declartion
         DefaultValue,       // Default value of a parameter
-        Description         // Artificial name or description
+        Description,        // Artificial name or description
+        DigitCount,         // Digit count for packed decimal or numeric string type
+        Discr,              // Disriminant of variant part
+        DiscrList,          // List of discriminant values
+        Elemental,          // Elemental property of a subroutine
+        Encoding,           // Encoding of a base type
+        Endianity,          // Endianity of data
+        EntryPC,            // Entry address of module init or (inlined-)subprogram
+        EnumClass,          // Type-safe enumeration definition
+        Explicit,           // Explicit property of a member function
+        Extension,          // Previous namespace extension or original namespace
+        External,           // External subroutine or variable
+        FrameBase,          // Subroutine frame base address
+        Friend,             // Friend relationship
+        HighPC,             // Contiguous range of code addresses
+        IdentifierCase,     // Identifier case rule
+        Import,             // Imported declaration or unit; namespace alias; using declaration or directive
+        Inline,             // Abstract instance or inlined subroutine
+        IsOptional,         // Optional parameter
+        Language,           // Programming language
+        LinkageName,        // Object file linkage name of an entity
+        Location,           // Data object location
+        LowPC,              // Code address or range of addresses
+        LowerBound,         // Lower bound of subrange
+        MacroInfo,          // Macro information
+        MainSubprogram,     // Main or starting subprogram or unit containing such
+        Mutable,            // Mutable property of member data
+        Name,               // Name of declaration or path name of compilation source
+        NamelistItem,       // Namelist item
+        ObjectPointer,      // Object (this, self) pointer of member interface
+        Ordering,           // Array row/column ordering 
+        PictureString,      // Picture string for numeric string type
+        Priority,           // Module priority
+        Producer,           // Compiler identification
+        Prototyped,         // Subroutine prototype
+        Pure,               // Pure property of a subroutine
+        Ranges,             // Non-contiguous range of code addresses
+        Recursive,          // Recursive property of a subroutine
+        ReturnAddress,      // Subroutine return address save location
+        Segment,            // Addressing information
+        Sibling,            // Debugging information entry relationship
+        Small,              // Scale factor for fixed-point type
+        Signature,          // Type signature
+        Specification,      // Incomplete, non-defining or separate declaration corresponding to a declaration
+        StartScope,         // Object or type declaration
+        StaticLink,         // Location of uplevel frame
+        StmtList,           // Line number information for unit
+        StringLength,       // String length of string type
+        ThreadsScaled,      // UPC array bound THREADS scale factor
+        Trampoline,         // Target subroutine
+        Type,               // Type of declaration or subroutine return
+        UpperBound,         // Upper bound of subrange
+        UseLocation,        // Member location for pointer to member type
+        UseUTF8,            // Compilation unit uses UTF-8 strings
+        VariableParameter,  // Non-constant parameter flag
+        Virtuality,         // Virtuality indication
+        Visibility,         // Visibility of declaration
+        VTableElemLocation  // Virtual function vtable slot
     };
 
     enum class BaseType : uint8_t
@@ -130,11 +187,11 @@ namespace dwarf
 
     enum class DecimalSign : uint8_t
     {
-        Unsigned          = 0x01,
-        LeadingOverpunch  = 0x02,
-        TrailingOverpunch = 0x03,
-        LeadingSeparate   = 0x04,
-        TrailingSeparate  = 0x05
+        Unsigned          = 0x01, // Unsigned
+        LeadingOverpunch  = 0x02, // Sign is encoded in the most significant digit in a target-dependent manner
+        TrailingOverpunch = 0x03, // Sign is encoded in the least significant digit in a target-dependent manner
+        LeadingSeparate   = 0x04, // Sign is a '+' or '-' character to the left of the most significant digit
+        TrailingSeparate  = 0x05  // Sign is a ‘+’ or ‘-’ character to the right of the least significant digit
     };
 
     enum class Endianness : uint8_t  // Dubbed "endianity" in spec
@@ -206,10 +263,10 @@ namespace dwarf
 
     enum class Inlining : uint8_t
     {
-        NotInlined         = 0x00,
-        Inlined            = 0x01,
-        DeclaredNotInlined = 0x02,
-        DeclaredInlined    = 0x03
+        NotInlined         = 0x00, // Not declared inline nor inlined by the compiler
+        Inlined            = 0x01, // Not declared inline but inlined by the compiler 
+        DeclaredNotInlined = 0x02, // Declared inline but not inlined by the compiler 
+        DeclaredInlined    = 0x03  // Declared inline and inlined by the compiler
     };
 
     enum class ArrayOrdering : uint8_t
@@ -232,5 +289,7 @@ namespace dwarf
         EndFile   = 0x04,
         VendorExt = 0xFF
     };
+
+
 
 }
