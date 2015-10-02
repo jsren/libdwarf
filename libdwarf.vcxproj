@@ -147,6 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\dwarf.h" />
+    <ClInclude Include="inc\format.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dwarf.cpp" />

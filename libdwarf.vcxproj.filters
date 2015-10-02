@@ -21,5 +21,6 @@
     <ClInclude Include="inc\dwarf.h">
       <Filter>inc</Filter>
     </ClInclude>
+    <ClInclude Include="inc\format.h" />
   </ItemGroup>
 </Project>
