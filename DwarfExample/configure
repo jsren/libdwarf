@@ -1,0 +1,29 @@
+#!/bin/bash
+
+platform=`uname -m`
+CFLAGS="-c"
+CPPFLAGS="-m32 -g"
+LDFLAGS="-I"
+LIBS="-lelf -lstdc++"
+
+echo $platform
+case $platform in
+"x86_64")
+        echo "Linux 64-bit OS"
+        ;;
+"ia64")
+        echo "HPIA platform 32-bit OS"
+	CPPFLAGS="-g"
+        LIBS="-lelf -lunwind -lstdc++"
+        ;;
+*)
+        echo "Unknown platform"
+        # Don't install any packages
+        ;;
+esac
+echo "dwarfexample: dwarfexample.o">Makefile
+echo "	gcc $CPPFLAGS -o dwarfexample dwarfexample.o libdwarf/libdwarf.a $LIBS" >>Makefile
+echo "dwarfexample.o: dwarfexample.cpp" >>Makefile
+echo "	gcc $CFLAGS $CPPFLAGS $LDFLAGS libdwarf dwarfexample.cpp" >>Makefile
+echo "clean:" >>Makefile
+echo "	rm dwarfexample.o dwarfexample" >>Makefile

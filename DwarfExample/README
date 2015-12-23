@@ -1,0 +1,22 @@
+Dwarfexample is a sample application which demonstrates how to extract specific debug information from executables created in the DWARF format. 
+In this case one can print the summary statisics about the execution, unique source files in the binary, details of all source files and details of all functions.
+Currently this tool supports only 32 bit DWARF executables and the configure script is supported only for Linux-86 and HP Itanium platform. 
+
+This application uses a libdwarf open source (http://reality.sgiweb.org/davea/dwarf.html ) and this needs to be compiled in 32 bit to the target platform. 
+The libdwarf has to be downloaded to the path <DwarfExample>.
+
+To build dwarfexample, type
+        ./configure ( This will generate the Makefile)
+        make
+
+To run dwarfexample,
+  ./dwarfexample -f func_name [-musl] input_binary_filename 
+func_name is any function name which you want to check in the binary. You will get the function name by looking at the sample application code.
+
+-m Dump Summary statistics.
+-u Dump Unique Source Files.
+-s Dump All Source file details
+-l Dump All function details
+
+input_binary_filename - is the DWARF 32 bit executable filename 
+You can use the example stack_tracing.c which is a sample program , that can be used to test the dwarfexample.

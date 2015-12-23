@@ -22,6 +22,9 @@
     <ClCompile Include="src\format.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\elf.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\const.h">
@@ -31,6 +34,7 @@
       <Filter>inc</Filter>
     </ClInclude>
     <ClInclude Include="inc\dwarf.h" />
+    <ClInclude Include="inc\elf.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\leb.s" />

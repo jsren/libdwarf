@@ -1,4 +1,12 @@
-#include <dwarf.h>
+#include "dwarf.h"
+#include "format.h"
+#include "elf.h"
+
+/*
+    The basic descriptive entity in DWARF is the debugging information entry (DIE). 
+    A DIE has a tag that specifies what the DIE describes and a list of 
+    attributes that fills in details, and further describes the entity.
+*/
 
 int main()
 {

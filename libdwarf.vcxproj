@@ -149,10 +149,12 @@
   <ItemGroup>
     <ClInclude Include="inc\const.h" />
     <ClInclude Include="inc\dwarf.h" />
+    <ClInclude Include="inc\elf.h" />
     <ClInclude Include="inc\format.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dwarf.cpp" />
+    <ClCompile Include="src\elf.cpp" />
     <ClCompile Include="src\format.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>

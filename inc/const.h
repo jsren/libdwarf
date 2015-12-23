@@ -5,7 +5,7 @@
 
 namespace dwarf
 {
-
+    // Tags
     enum class DIEType : uint16_t
     {
         ArrayType           = 0x01,
