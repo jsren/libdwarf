@@ -1,8 +1,8 @@
-#include <format.h>
+#include "format.h"
+#include <platform.h>
 
 namespace dwarf
 {
-
     int32_t uleb_read(uint8_t data[], /*out*/ uint32_t &value)
     {
         // Perform manual optimisation

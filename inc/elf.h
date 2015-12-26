@@ -53,5 +53,6 @@ namespace dwarf
         uint32_t    sh_addralign; // Section alignment constraints
         uint32_t    sh_entsize;   // Entry size for tabular sections
     };
-
+    
+    bool loadHeader(const char *filepath, Header32 *header);
 }
