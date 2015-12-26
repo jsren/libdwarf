@@ -54,5 +54,5 @@ namespace dwarf
         uint32_t    sh_entsize;   // Entry size for tabular sections
     };
     
-    bool loadHeader(const char *filepath, Header32 *header);
+    bool loadHeader(FILE *file, Header32 *header);
 }
