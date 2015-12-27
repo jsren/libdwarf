@@ -1,4 +1,12 @@
 /* format.h - (c) James S Renwick 2015 */
+/*
+   Each debugging information entry begins with an unsigned LEB128 number 
+   containing the abbreviation code for the entry. This code represents an 
+   entry within the abbreviations table associated with the compilation unit 
+   containing this entry. The abbreviation code is followed by a series of 
+   attribute values.
+*/
+
 #pragma once
 #include <stdint.h>
 
@@ -101,6 +109,26 @@ namespace dwarf
         SetAddress       = 0x02,
         DefineFile       = 0x03,
         SetDescriminator = 0x04
+    };
+
+    // .debug_info section header
+    struct CompilationUnitHeader32
+    {
+    public:
+        uint32_t unitLength;
+        uint16_t version;
+        uint32_t debugAbbrevOffset;
+        uint8_t  addressSize;
+    };
+    struct TypeUnitHeader32
+    {
+    public:
+        uint32_t unitLength;
+        uint16_t version;
+        uint32_t debugAbbrevOffset;
+        uint8_t  addressSize;
+        uint64_t typeSignature;
+        uint32_t typeOffset;
     };
 
 

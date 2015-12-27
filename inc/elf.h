@@ -1,11 +1,14 @@
 #pragma once
 #include <stdint.h>
 
+#include "glue.h"
+
 #define EI_NIDENT 16
 
 namespace dwarf
 {
-    struct Header32
+    __pragma(pack(push, 1))
+    struct FileHeader32
     {
     public:
         unsigned char e_ident[EI_NIDENT]; // ELF Magic
@@ -23,6 +26,7 @@ namespace dwarf
         uint16_t      e_shnum;            // Section header table entry count
         uint16_t      e_shstrndx;         // Index of section name string table in header table
     };
+    __pragma(pack(pop))
 
     enum class SectionType : uint32_t
     {
@@ -40,6 +44,7 @@ namespace dwarf
         DynSym   = 0xB  // Dynamic linking symbol table
     };
 
+    __pragma(pack(push, 1))
     struct SectionHeader32
     {
         uint32_t    sh_name;      // String table index of section name
@@ -53,6 +58,32 @@ namespace dwarf
         uint32_t    sh_addralign; // Section alignment constraints
         uint32_t    sh_entsize;   // Entry size for tabular sections
     };
-    
-    bool loadHeader(FILE *file, Header32 *header);
+    __pragma(pack(pop))
+
+    class ElfFile32
+    {
+    private:
+        SectionHeader32 *sections;
+        const char *strTable;
+
+    public:
+        FileHeader32 header;
+        glue::IFile *const file;
+
+    public:
+        ElfFile32(glue::IFile &file, int &error_out);
+        ~ElfFile32();
+        
+        ElfFile32(ElfFile32 &elfFile);
+        ElfFile32(ElfFile32 &&elfFile);
+
+    public:
+        const SectionHeader32 *getSection(uint32_t index) const;
+        const SectionHeader32 *getSection(const char *name) const;
+
+        const char &getSectionName(uint32_t index) const;
+
+        size_t readSectionData(uint32_t index, uint8_t *buffer, size_t bufferSize) const;
+        size_t readSectionData(const char *name, uint8_t *buffer, size_t bufferSize) const;
+    };
 }

@@ -35,6 +35,7 @@
     </ClInclude>
     <ClInclude Include="inc\dwarf.h" />
     <ClInclude Include="inc\elf.h" />
+    <ClInclude Include="inc\glue.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\leb.s" />

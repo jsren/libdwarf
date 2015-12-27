@@ -8,6 +8,32 @@
 
 using namespace dwarf;
 
+void glue::printf(const char *string) {
+    ::printf(string);
+}
+template <typename ...Args>
+void glue::printf(const char *format, Args... items)
+{
+    ::printf(format, items...);
+}
+
+class FILEWrapper : public glue::IFile
+{
+private:
+    FILE *file;
+
+public:
+    FILEWrapper(FILE *file) : file(file) { }
+
+public:
+    int seek(size_t offset) override {
+        return fseek(this->file, (long)offset, 0);
+    }
+    size_t read(void *buffer, size_t length) override {
+        return fread(buffer, 1, (long)length, this->file);
+    }
+};
+
 /*
     The basic descriptive entity in DWARF is the debugging information entry (DIE). 
     A DIE has a tag that specifies what the DIE describes and a list of 
@@ -17,73 +43,15 @@ using namespace dwarf;
 int main(int argc, const char** args)
 {
     FILE *file = fopen(args[1], "rb");
+    FILEWrapper wrapper(file);
 
-    dwarf::Header32 header;
-    dwarf::loadHeader(file, &header);
+    int error = 0;
+    ElfFile32* elfFile = new ElfFile32(wrapper, error);
 
-    const char *strings;
-    
-    if (header.e_shoff == 0 || fseek(file, header.e_shoff, 0) != 0) {
-        printf("[ERROR] Missing section table or unable to seek.");
-    }
-
-    
-    const char **strTables = NULL;
-
-    dwarf::SectionHeader32 *sections = (SectionHeader32*)
-        malloc(sizeof(SectionHeader32) * header.e_shnum);
-
-    uint32_t stringSectionCount = 0;
-
-    for (uint32_t i = 0; i < header.e_shnum; i++)
+    for (int i = 1; i < elfFile->header.e_shnum; i++)
     {
-        if (fread(&sections[i], 1, sizeof(sections[0]), file) != sizeof(sections[0]))
-        {
-            printf("[ERROR] Invalid ELF header or unable to read file");
-            break;
-        }
-        if (sections[i].sh_type == SectionType::StrTab) {
-            stringSectionCount++;
-        }
+        puts(&elfFile->getSectionName(i));
     }
-    strTables = (const char **)malloc(sizeof(strTables[0]) * stringSectionCount);
-
-    for (uint32_t i = 0, n = 0; i < header.e_shnum, n < stringSectionCount; i++)
-    {
-        if (sections[i].sh_type == SectionType::StrTab) 
-        {
-            char *data = (char*)malloc(header.e_ehsize);
-
-            if (fread(data, 1, header.e_ehsize, file) != header.e_ehsize) {
-                printf("[ERROR] Invalid ELF section table or unable to read file");
-            }
-            strTables[n++] = data;
-        }
-    }
-
-    SectionHeader32 *dbgSection = NULL;
-
-    uint32_t i = 0;
-    for (; i < header.e_shnum; i++)
-    {
-        if (sections[i].sh_type != dwarf::SectionType::ProgBits) continue;
-
-        strings = (const char *)strTables[sections[i].sh_link];
-        const char *name = &strings[sections[i].sh_name];
-
-        if (strcmp(name, ".debug-info") == 0) 
-        {
-            dbgSection = &sections[i];
-            break;
-        }
-    }
-    if (dbgSection == NULL)
-    {
-        printf("[ERROR] No debug section found.");
-        return 1;
-    }
-
-
 
     return 0;
 }
