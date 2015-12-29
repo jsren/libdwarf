@@ -84,7 +84,7 @@ namespace dwarf
             {
                 if (str[n] != name[n]) break;
 
-                if (str[n] == '\n') {
+                if (str[n] == '\0') {
                     return &this->sections[i];
                 }
             }
@@ -110,6 +110,8 @@ namespace dwarf
     {
         const SectionHeader32 *section = this->getSection(name);
         
+        if (section == nullptr) return 0;
+
         this->file->seek(section->sh_offset);
 
         return this->file->read(buffer,  

@@ -1,14 +1,14 @@
 #pragma once
 #include <stdint.h>
 
+#include "platform.h"
 #include "glue.h"
 
 #define EI_NIDENT 16
 
 namespace dwarf
 {
-    __pragma(pack(push, 1))
-    struct FileHeader32
+    packed_begin struct FileHeader32
     {
     public:
         unsigned char e_ident[EI_NIDENT]; // ELF Magic
@@ -25,8 +25,7 @@ namespace dwarf
         uint16_t      e_shentsize;        // Section header table entry size
         uint16_t      e_shnum;            // Section header table entry count
         uint16_t      e_shstrndx;         // Index of section name string table in header table
-    };
-    __pragma(pack(pop))
+    } packed_end;
 
     enum class SectionType : uint32_t
     {
@@ -44,8 +43,7 @@ namespace dwarf
         DynSym   = 0xB  // Dynamic linking symbol table
     };
 
-    __pragma(pack(push, 1))
-    struct SectionHeader32
+    packed_begin struct SectionHeader32
     {
         uint32_t    sh_name;      // String table index of section name
         SectionType sh_type;      // Section type
@@ -57,8 +55,7 @@ namespace dwarf
         uint32_t    sh_info;      // Additional type-specific info
         uint32_t    sh_addralign; // Section alignment constraints
         uint32_t    sh_entsize;   // Entry size for tabular sections
-    };
-    __pragma(pack(pop))
+    } packed_end;
 
     class ElfFile32
     {
