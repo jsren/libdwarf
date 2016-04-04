@@ -4,15 +4,12 @@
 namespace dwarf
 {
 
-
-
-    
-    void loadAbbreviationTable(dwarf::Context &context, uint8_t *abbv_table) noexcept(false)
+    void loadAbbreviationTable(uint8_t *abbv_table) noexcept
     {
-
+        
     }
 
-    void indexAbbreviationTable(dwarf::Context &context, uint8_t *abbrv_table) noexcept(false)
+    void indexAbbreviationTable(uint8_t *abbrv_table) noexcept
     {
         // Pass 1 - count the number of entries
 

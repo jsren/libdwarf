@@ -151,6 +151,7 @@
     <ClInclude Include="inc\dwarf.h" />
     <ClInclude Include="inc\elf.h" />
     <ClInclude Include="inc\format.h" />
+    <ClInclude Include="inc\platform.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dwarf.cpp" />
@@ -159,6 +160,7 @@
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="makefile" />
     <None Include="src\leb.s" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

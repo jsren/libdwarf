@@ -1,20 +1,19 @@
+/* dwarf.h - (c) James S Renwick 2015-16 */
 #pragma once
-#include <const.h>
+#include <cstddef>
+#include <stdint.h>
+#include <cstring>
+#include "const.h"
 
 namespace dwarf
 {
+    using dwarfArch = bool;
+    constexpr dwarfArch dwarf32 = true;
+    constexpr dwarfArch dwarf64 = false;
 
-#ifdef DWARF_x64
-    using Int  = int64_t;
-    using UInt = uint64_t;
-#else
-    using Int  = int32_t;
-    using UInt = uint32_t;
-#endif
-
-
-    enum class ObjectFileSection
+    enum class SectionType : uint8_t
     {
+        invalid,
         debug_info,
         debug_abbrev,
         debug_aranges,
@@ -23,31 +22,60 @@ namespace dwarf
         debug_str
     };
 
-    struct ObjectFileSectionInfo
+
+    template<dwarfArch dwarf32=dwarf32>
+    struct DwarfSection
     {
-    public:
-        dwarf::UInt offset;
-        dwarf::UInt size;
+        SectionType type;
+        uint8_t* data;
+        uint32_t size;
+
+        DwarfSection() noexcept = default;
+
+        explicit DwarfSection(SectionType type, const uint8_t* data, uint32_t size) noexcept
+            : type(type), data(nullptr), size(size)
+        {
+            this->data = new uint8_t[size];
+            memcpy(this->data, data, size);
+        }
+
+        inline ~DwarfSection() { if (data != nullptr) delete[] data; }
+    };
+    template<>
+    struct DwarfSection<dwarf64>
+    {
+        SectionType type;
+        uint8_t* data;
+        uint64_t size;
+
+        DwarfSection() noexcept = default;
+
+        explicit DwarfSection(SectionType type, const uint8_t* data, uint64_t size) noexcept 
+            : type(type), data(nullptr), size(size) 
+        {
+            this->data = new uint8_t[size];
+            memcpy(this->data, data, size);
+        }
+
+        inline ~DwarfSection() { if (data != nullptr) delete[] data; }
     };
 
 
-    class ObjectFile
+    template<dwarfArch dwarf32=dwarf32>
+    struct DwarfContext
     {
-    public:
-        ObjectFile() = default;
-        virtual ~ObjectFile() = default;
+        const DwarfSection<>* sections;
 
-        ObjectFile(ObjectFile &&)      = delete;
-        ObjectFile(const ObjectFile &) = delete;
-
-    public:
-        virtual dwarf::Int read(uint8_t *buffer, dwarf::UInt startIndex, dwarf::UInt length) noexcept(false) = 0;
-        virtual ObjectFileSectionInfo getSectionInfo(ObjectFileSection section) noexcept(false) = 0;
+        explicit DwarfContext(const DwarfSection<> sections[6]) noexcept
+            : sections(sections) { }
+    };
+    template<>
+    struct DwarfContext<dwarf64>
+    {
+        const DwarfSection<dwarf64>* sections;
+        
+        explicit DwarfContext(const DwarfSection<dwarf64> sections[6], size_t sectionCount) noexcept
+            : sections(sections) { }
     };
 
-    struct Context
-    {
-    public:
-
-    };
 }

@@ -35,8 +35,10 @@
     </ClInclude>
     <ClInclude Include="inc\dwarf.h" />
     <ClInclude Include="inc\elf.h" />
+    <ClInclude Include="inc\platform.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\leb.s" />
+    <None Include="makefile" />
   </ItemGroup>
 </Project>

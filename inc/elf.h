@@ -1,10 +1,17 @@
+/* elf.h - (c) James S Renwick 2015 */
 #pragma once
 #include <stdint.h>
+#include "platform.h"
 
 #define EI_NIDENT 16
 
-namespace dwarf
+namespace elf
 {
+    typedef signed long int error_t;
+
+    extern const char emptyName[1];
+
+    _pack_start
     struct Header32
     {
     public:
@@ -22,7 +29,7 @@ namespace dwarf
         uint16_t      e_shentsize;        // Section header table entry size
         uint16_t      e_shnum;            // Section header table entry count
         uint16_t      e_shstrndx;         // Index of section name string table in header table
-    };
+    } _pack_end;
 
     enum class SectionType : uint32_t
     {
@@ -40,6 +47,7 @@ namespace dwarf
         DynSym   = 0xB  // Dynamic linking symbol table
     };
 
+    _pack_start
     struct SectionHeader32
     {
         uint32_t    sh_name;      // String table index of section name
@@ -52,6 +60,25 @@ namespace dwarf
         uint32_t    sh_info;      // Additional type-specific info
         uint32_t    sh_addralign; // Section alignment constraints
         uint32_t    sh_entsize;   // Entry size for tabular sections
-    };
 
+
+        inline const char* getName(const char* strTab, size_t strTabLength) noexcept
+        {
+            // Handle empty string table
+            if (strTabLength == 0) return emptyName;
+
+            // Otherwise, return string from offset
+            return &strTab[this->sh_name];
+        }
+    } _pack_end;
+
+
+    error_t parseElfHeader(const uint8_t* buffer, size_t bufferSize,
+        Header32& header_out) noexcept;
+
+    error_t parseSectionHeader(const uint8_t* buffer, size_t bufferSize,
+        SectionHeader32& header_out) noexcept;
+
+    error_t parseSectionTable(const uint8_t* buffer, size_t bufferSize,
+        decltype(Header32::e_shnum) sectionCount, SectionHeader32*& table_out);
 }

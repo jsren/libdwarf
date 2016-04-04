@@ -1,12 +1,12 @@
-#include <format.h>
+/* format.cpp - (c) James S Renwick 2015 */
+#include "format.h"
 
 namespace dwarf
 {
 
     int32_t uleb_read(uint8_t data[], /*out*/ uint32_t &value)
     {
-        // Perform manual optimisation
-
+        // Perform manual unrolling
         value = data[0];
         if ((data[0] & 0b10000000) == 0) return 1;
         else value &= 0b01111111;
@@ -36,11 +36,9 @@ namespace dwarf
     int32_t uleb_read(uint8_t data[], /*out*/ uint64_t &value)
     {
         int32_t i = 0;
-        int shift = 0;
-
         value = 0; // Zero 
         
-        for (int shift = 0; i <= sizeof(value); shift += 7, i++)
+        for (uint8_t shift = 0; i <= (uint8_t)sizeof(value); shift += 7, i++)
         {
             value |= ((uint64_t)data[i] << shift);
             if ((data[i] & 0b10000000) == 0) return i + 1;

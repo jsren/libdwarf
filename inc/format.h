@@ -1,12 +1,13 @@
 /* format.h - (c) James S Renwick 2015 */
 #pragma once
 #include <stdint.h>
+#include "platform.h"
 
 namespace dwarf
 {
 
-    int32_t uleb_read(uint8_t *data, /*out*/ uint32_t &value);
-    int32_t uleb_read(uint8_t *data, /*out*/ uint64_t &value);
+    int32_t uleb_read(uint8_t data[], /*out*/ uint32_t &value);
+    int32_t uleb_read(uint8_t data[], /*out*/ uint64_t &value);
 
 
     enum class OpCode : uint8_t
@@ -106,7 +107,7 @@ namespace dwarf
 
 #pragma region .DEBUG_PUBNAMES/.DEBUG_PUBTYPES
 
-    __pragma(pack(push, 1))
+    _pack_start
     struct NameTableHeader32
     {
     public:
@@ -116,10 +117,9 @@ namespace dwarf
         uint32_t debugInfoOffset; // Offset into the .debug_info section of the compilation unit header
         uint32_t debugInfoLength; // Length containing the size in bytes of the contents of the .debug_info section
                                   // generated to represent this compilation unit
-    };
-    __pragma(pack(pop))
+    } _pack_end;
 
-    __pragma(pack(push, 1))
+    _pack_start
     struct NameTableHeader64
     {
     public:
@@ -130,14 +130,13 @@ namespace dwarf
         uint64_t debugInfoOffset; // Offset into the .debug_info section of the compilation unit header
         uint64_t debugInfoLength; // Length containing the size in bytes of the contents of the .debug_info section
                                   // generated to represent this compilation unit
-    };
-    __pragma(pack(pop))
+    } _pack_end;
 
 #pragma endregion
 
 
 #pragma region .DEBUG_ARRANGES
-    __pragma(pack(push, 1))
+    _pack_start
     struct AddressRangeTableHeader32
     {
     public:
@@ -147,10 +146,10 @@ namespace dwarf
         uint32_t debugInfoOffset; // Offset into the .debug_info section of the compilation unit header
         uint8_t  addressSize;     // The size in bytes of an address (or the offset portion for segmented) on the target system
         uint8_t  segmentSize;     // The size in bytes of a segment selector on the target system
-    };
-    __pragma(pack(pop))
+    } _pack_end;
+    
 
-    __pragma(pack(push, 1))
+    _pack_start
     struct AddressRangeTableHeader64
     {
     public:
@@ -161,8 +160,7 @@ namespace dwarf
         uint64_t debugInfoOffset; // Offset into the .debug_info section of the compilation unit header
         uint8_t  addressSize;     // The size in bytes of an address (or the offset portion for segmented) on the target system
         uint8_t  segmentSize;     // The size in bytes of a segment selector on the target system
-    };
-    __pragma(pack(pop))
+    } _pack_end;
 #pragma endregion
 
 }
