@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include "platform.h"
 
+#include "platform.h"
+#include "glue.h"
+
 #define EI_NIDENT 16
 
 namespace elf
@@ -47,7 +50,7 @@ namespace elf
         DynSym   = 0xB  // Dynamic linking symbol table
     };
 
-    _pack_start
+    _pack_start 
     struct SectionHeader32
     {
         uint32_t    sh_name;      // String table index of section name
@@ -60,7 +63,6 @@ namespace elf
         uint32_t    sh_info;      // Additional type-specific info
         uint32_t    sh_addralign; // Section alignment constraints
         uint32_t    sh_entsize;   // Entry size for tabular sections
-
 
         inline const char* getName(const char* strTab, size_t strTabLength) noexcept
         {
@@ -81,4 +83,5 @@ namespace elf
 
     error_t parseSectionTable(const uint8_t* buffer, size_t bufferSize,
         decltype(Header32::e_shnum) sectionCount, SectionHeader32*& table_out);
+
 }

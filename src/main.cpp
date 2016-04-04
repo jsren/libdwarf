@@ -5,10 +5,88 @@
 #include <stdio.h>
 #include <assert.h>
 #include <cstring>
+#include <memory>
+
 
 #include "dwarf.h"
 #include "format.h"
 #include "elf.h"
+
+using namespace dwarf;
+
+template<class T>
+class List : public glue::IList<T>
+{
+private:
+    T *array;
+    size_t capacity;
+    size_t index;
+
+public:
+    List()
+    {
+        capacity = 0;
+        index    = 0;
+    }
+
+    void add(T item) override
+    {
+        // Perform expansion as necessary
+        if (index == capacity) 
+        {
+            // Perform initial alloc
+            if (capacity == 0) 
+            {
+                capacity = 10;
+                this->array = (T*)malloc(capacity * sizeof(T));
+            }
+            else
+            {
+                this->array = (T*)realloc(this->array,
+                    (capacity = (capacity + capacity / 2)));
+            }
+        }
+        array[index++] = item;
+    }
+
+    size_t count() override {
+        return this->index;
+    }
+    T &operator [](size_t index) override {
+        return this->array[index];
+    }
+
+    T *toArray() override 
+    {
+        T *newArray = (T*)malloc(index * sizeof(T));
+        memcpy(newArray, this->array, index * sizeof(T));
+        return newArray;
+    }
+};
+
+
+class FILEWrapper : public glue::IFile
+{
+private:
+    FILE *file;
+
+public:
+    FILEWrapper(FILE *file) : file(file) { }
+
+public:
+    int seek(size_t offset, glue::SeekMode mode) override 
+    {
+        return fseek(this->file, (long)offset, 
+            mode == glue::SeekMode::Absolute ? SEEK_SET : SEEK_CUR);
+    }
+    size_t read(void *buffer, size_t length) override {
+        return fread(buffer, 1, (long)length, this->file);
+    }
+    size_t getPosition() override {
+        return ftell(this->file);
+    }
+};
+
 
 /*
     The basic descriptive entity in DWARF is the debugging information entry (DIE). 
@@ -19,15 +97,8 @@
 elf::Header32 fileHeader;
 elf::SectionHeader32* sectionTable;
 
-int main()
+int main(int argc, const char** args)
 {
-    uint8_t testdata[] = { 57+0x80, 100 };
-    
-    uint64_t value;
-
-    volatile int32_t  c = dwarf::uleb_read(testdata, value);
-    volatile uint32_t b = value;
-
     FILE* file = fopen("DwarfExample/dwarfexample.bin", "rb");
     assert(file != NULL);
 

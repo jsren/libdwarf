@@ -1,10 +1,10 @@
-#include <dwarf.h>
-#include <format.h>
+#include "dwarf.h"
+#include "format.h"
 
 namespace dwarf
 {
 
-    void loadAbbreviationTable(uint8_t *abbv_table) noexcept
+    void loadAbbreviationTable(DwarfContext<> &context, uint8_t *abbv_table) noexcept
     {
         
     }

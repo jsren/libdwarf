@@ -8,6 +8,7 @@ namespace dwarf
     // Tags
     enum class DIEType : uint16_t
     {
+        None                = 0x00,
         ArrayType           = 0x01,
         ClassType           = 0x02,
         EntryPoint          = 0x03, // An alternate entry point
@@ -70,7 +71,7 @@ namespace dwarf
         TemplateAlias       = 0x43
     };
 
-    enum class Attribute : uint16_t
+    enum class AttributeName : uint16_t
     {
         AbstractOrigin     = 0x31, // Instance of inline subprogram
         Accessibility      = 0x32, // C++ declarations, base classes & inherited members
@@ -108,7 +109,7 @@ namespace dwarf
         Description        = 0x5A, // Artificial name or description
         DigitCount         = 0x5F, // Digit count for packed decimal or numeric string type
         Discr              = 0x15, // Disriminant of variant part
-        DiscrList          = 0x3D, // List of discriminant values
+        DiscrList          = 0x3D, // IList of discriminant values
         DiscrValue         = 0x16,
         Elemental          = 0x66, // Elemental property of a subroutine
         Encoding           = 0x3E, // Encoding of a base type
@@ -164,6 +165,49 @@ namespace dwarf
         Virtuality         = 0x4C, // Virtuality indication
         Visibility         = 0x17, // Visibility of declaration
         VTableElemLocation = 0x4D  // Virtual function vtable slot
+    };
+
+    enum class AttributeForm
+    {
+        Address     = 0x01,
+        Block2      = 0x03,
+        Block4      = 0x04,
+        Data2       = 0x05,
+        Data4       = 0x06,
+        Data8       = 0x07,
+        String      = 0x08,
+        Block       = 0x09,
+        Block1      = 0x0A,
+        Data1       = 0x0B,
+        Flag        = 0x0C, // Single-byte flag. 0x00 indicates not present.
+        SData       = 0x0D,
+        Strp        = 0x0E,
+        UData       = 0x0F,
+        RefAddr     = 0x10,
+        Ref1        = 0x11,
+        Ref2        = 0x12,
+        Ref4        = 0x13,
+        Ref8        = 0x14,
+        RefUData    = 0x15,
+        Indirect    = 0x16,
+        SecOffset   = 0x17,
+        ExprLoc     = 0x18, // DWARF Expression or Location Description
+        FlagPresent = 0x19, // Single-byte flag
+        RefSig8     = 0x20,
+    };
+
+    enum class AttributeClass
+    {
+        None,
+        Address,
+        Block,
+        Constant,
+        String,
+        Flag,
+        Reference,      // DIE reference within section
+        UnitReference,  // DIE reference within compilation unit
+        SectionPointer,
+        ExprLoc
     };
 
     enum class BaseType : uint8_t
@@ -289,6 +333,100 @@ namespace dwarf
         StartFile = 0x03,
         EndFile   = 0x04,
         VendorExt = 0xFF
+    };
+
+    enum class OpCode : uint8_t
+    {
+        Address = 0x03,
+        Deref   = 0x06,
+
+        Const1U = 0x08, // 1-byte unsigned constant
+        Const1S = 0x09, // 1-byte signed constant
+        Const2U = 0x0A, // 2-byte unsigned constant
+        Const2S = 0x0B, // 2-byte signed constant
+        Const4U = 0x0C, // 4-byte unsigned constant
+        Const4S = 0x0D, // 4-byte signed constant
+        Const8U = 0x0E, // 8-byte unsigned constant
+        Const8S = 0x0F, // 8-byte signed constant
+        ConstU  = 0x10, // ULEB128 constant
+        ConstS  = 0x11, // SLEB128 constant
+
+        Dup        = 0x12,
+        Drop       = 0x13,
+        Over       = 0x14,
+        Pick       = 0x15,
+        Swap       = 0x16,
+        Rot        = 0x17,
+        XDeref     = 0x18,
+        Abs        = 0x19,
+        And        = 0x1A,
+        Div        = 0x1B,
+        Minus      = 0x1C,
+        Mod        = 0x1D,
+        Mul        = 0x1E,
+        Neg        = 0x1F,
+        Not        = 0x20,
+        Or         = 0x21,
+        Plus       = 0x22,
+        PlusUConst = 0x23,
+        Shl        = 0x24,
+        Shr        = 0x25,
+        Shra       = 0x26,
+        Xor        = 0x27,
+        Skip       = 0x2F,
+        Bra        = 0x28,
+        Eq         = 0x29,
+        Ge         = 0x2A,
+        Gt         = 0x2B,
+        Le         = 0x2C,
+        Lt         = 0x2D,
+        Ne         = 0x2E,
+        //LitBase  = 0x30, // Literal values from 0 to 31 inclusive
+        //RegBase  = 0x50, // Register nos. from 0 to 31 inclusive
+        RegX       = 0x90,
+        FBReg      = 0x91,
+        BRegX      = 0x92,
+        Piece      = 0x93,
+        DerefSize  = 0x94,
+        XDerefSize = 0x95,
+        Nop        = 0x96,
+
+        PushObjectAddress = 0x97,
+        Call2             = 0x98,
+        Call4             = 0x99,
+        CallRef           = 0x9A,
+        FormTLSAddress    = 0x9B,
+        CallFrameCFA      = 0x9C,
+        BitPiece          = 0x9D,
+        ImplicitValue     = 0x9E,
+        StackValue        = 0x9F
+    };
+
+
+    /* Opcodes used in line number calculation */
+    enum class LineOpCode : uint8_t
+    {
+        Copy             = 0x01,
+        AdvancePC        = 0x02,
+        AdvanceLine      = 0x03,
+        SetFile          = 0x04,
+        SetColumn        = 0x05,
+        NegateStmnt      = 0x06,
+        SetBasicBlock    = 0x07,
+        ConstAddPC       = 0x08,
+        FixedAdvancePC   = 0x09,
+        SetPrologueEnd   = 0x0A,
+        SetEpilogueBegin = 0x0B,
+        SetISA           = 0x0C
+    };
+
+    /* Extended opcodes used in line number calculation */
+    enum class LineOpCodeEx : uint8_t
+    {
+        EndSequence      = 0x01,
+        SetAddress       = 0x02,
+        DefineFile       = 0x03,
+        SetDescriminator = 0x04
     };
 
 }

@@ -1,9 +1,9 @@
-/* format.cpp - (c) James S Renwick 2015 */
+/* format.cpp - (c) James S Renwick 2015-16 */
 #include "format.h"
+#include "platform.h"
 
 namespace dwarf
 {
-
     int32_t uleb_read(uint8_t data[], /*out*/ uint32_t &value)
     {
         // Perform manual unrolling
@@ -49,5 +49,111 @@ namespace dwarf
         while (data[i++] & 0b10000000) { }
         return i;
     }
+
+    // TODO: Fix
+    //DIEDefinition DIEDefinition::parse(glue::IFile &file)
+    //{
+    //    uint32_t tag = 0;
+    //    DIEDefinition def{};
+    //    bool hasChildren = false;
+    //    uint8_t buffer[16] = { 0 };
+
+    //    file.read(buffer, sizeof(id));
+    //    uleb_read(buffer, def.id);
+
+    //    file.read(buffer, sizeof(tag));
+    //    uleb_read(buffer, tag);
+    //    def.tag = (DIEType)tag;
+
+    //    file.read(buffer, 1);
+    //    hasChildren = buffer[0] != 0;
+    //    
+    //    auto atts = glue::new_IList<AttributeDefinition>();
+
+    //    AttributeDefinition att;
+    //    while (true)
+    //    {
+    //        uint32_t name, form;
+    //        file.read(buffer, sizeof(name));
+    //        uleb_read(buffer, name);
+
+    //        file.read(buffer, sizeof(form));
+    //        uleb_read(buffer, form);
+
+    //        // Found end-of-attributes
+    //        if (name == 0 && form == 0) break;
+
+    //        att.name = (AttributeName)name;
+    //        att.form = (AttributeForm)form;
+
+    //        switch (att.form)
+    //        {
+    //        case AttributeForm::Address:
+    //            att.class_ = AttributeClass::Address; break;
+    //        case AttributeForm::Block2:
+    //        case AttributeForm::Block4:
+    //        case AttributeForm::Block:
+    //        case AttributeForm::Block1:
+    //            att.class_ = AttributeClass::Block; break;
+    //        case AttributeForm::Data2:
+    //        case AttributeForm::Data4:
+    //        case AttributeForm::Data8:
+    //        case AttributeForm::Data1:
+    //        case AttributeForm::SData:
+    //        case AttributeForm::UData:
+    //            att.class_ = AttributeClass::Constant; break;
+    //        case AttributeForm::String:
+    //        case AttributeForm::Strp:
+    //            att.class_ = AttributeClass::String; break;
+    //        case AttributeForm::Flag:
+    //        case AttributeForm::FlagPresent:
+    //            att.class_ = AttributeClass::Flag; break;
+    //        case AttributeForm::RefAddr:
+    //            att.class_ = AttributeClass::Reference; break;
+    //        case AttributeForm::Ref1:
+    //        case AttributeForm::Ref2:
+    //        case AttributeForm::Ref4:
+    //        case AttributeForm::Ref8:
+    //        case AttributeForm::RefUData:
+    //        case AttributeForm::RefSig8:
+    //            att.class_ = AttributeClass::UnitReference; break;
+    //        case AttributeForm::Indirect:
+    //            att.class_ = AttributeClass::None; break;
+    //        case AttributeForm::SecOffset:
+    //            att.class_ = AttributeClass::SectionPointer; break;
+    //        case AttributeForm::ExprLoc:
+    //            att.class_ = AttributeClass::ExprLoc; break;
+    //        default:
+    //            att.class_ = AttributeClass::None; break;
+    //        }
+    //        atts->add(att);
+    //    }
+
+    //    // Assign attributes
+    //    if ((def.attributeCount = atts->count()) != 0) {
+    //        def.attributes = atts->toArray();
+    //    }
+
+    //    // Handle child definitions
+    //    if (hasChildren)
+    //    {
+    //        auto children = glue::new_IList<DIEDefinition>();
+
+    //        while (true)
+    //        {
+    //            DIEDefinition child = parse(file);
+    //            if (child.id != 0 || child.tag != DIEType::None) {
+    //                children->add(child);
+    //            }
+    //        }
+
+    //        if ((def.childCount = children->count()) != 0) {
+    //            def.children = children->toArray();
+    //        }
+
+    //        delete children;
+    //    }
+    //    return def;
+    //}
 
 }

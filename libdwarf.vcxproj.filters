@@ -35,7 +35,11 @@
     </ClInclude>
     <ClInclude Include="inc\dwarf.h" />
     <ClInclude Include="inc\elf.h" />
+<<<<<<< HEAD
     <ClInclude Include="inc\platform.h" />
+=======
+    <ClInclude Include="inc\glue.h" />
+>>>>>>> 376e163eb7b02350e220840ad242217b59157bd7
   </ItemGroup>
   <ItemGroup>
     <None Include="src\leb.s" />

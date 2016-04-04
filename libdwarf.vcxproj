@@ -152,6 +152,7 @@
     <ClInclude Include="inc\elf.h" />
     <ClInclude Include="inc\format.h" />
     <ClInclude Include="inc\platform.h" />
+    <ClInclude Include="inc\glue.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dwarf.cpp" />
