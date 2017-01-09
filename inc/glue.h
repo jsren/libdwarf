@@ -16,6 +16,7 @@ namespace dwarf
             Relative
         };
 
+
         template<class T>
         class IList
         {
@@ -26,6 +27,8 @@ namespace dwarf
             virtual T *toArray() = 0;
             virtual T &operator [](size_t index) = 0;
         };
+
+
 
         class IFile
         {

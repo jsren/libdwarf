@@ -1,159 +1,129 @@
 /* format.cpp - (c) James S Renwick 2015-16 */
 #include "format.h"
 #include "platform.h"
+#include "dwarf.h"
 
-namespace dwarf
+#include <vector>
+
+
+namespace dwarf4
 {
-    int32_t uleb_read(uint8_t data[], /*out*/ uint32_t &value)
-    {
-        // Perform manual unrolling
-        value = data[0];
-        if ((data[0] & 0b10000000) == 0) return 1;
-        else value &= 0b01111111;
 
-        value |= ((uint32_t)data[1] << 7);
-        if ((data[1] & 0b10000000) == 0) return 2;
-        else value &= ((0b01111111 << 7) | 0xFF);
+	uint32_t parseAttribute(const uint8_t* buffer, std::size_t length, AttributeDefinition att_out)
+	{
+		const uint8_t* bufferStart = buffer;
 
-        value |= ((uint32_t)data[2] << 14);
-        if ((data[2] & 0b10000000) == 0) return 3;
-        else value &= ((0b01111111 << 14) | 0xFFFF);
+		uint32_t name, form;
+		buffer += dwarf::uleb_read(buffer, name);
+		buffer += dwarf::uleb_read(buffer, form);
 
-        value |= ((uint32_t)data[3] << 21);
-        if ((data[3] & 0b10000000) == 0) return 4;
-        else value &= ((0b01111111 << 21) | 0xFFFFFF);
+		// Found end-of-attributes
+		if (name == 0 && form == 0) goto end;
 
-        value |= ((uint32_t)data[4] << 28);
-        if ((data[4] & 0b10000000) == 0) return 5;
+		att_out.name = (AttributeName)name;
+		att_out.form = (AttributeForm)form;
 
-        // Consume any extra bytes
-        for (int i = sizeof(value) + 1; true; i++) {
-            if ((data[i] & 0b10000000) == 0) return i + 1;
-        }
-        return -1; // This should never happen...
-    }
+		switch (att_out.form)
+		{
+		case AttributeForm::Address:
+			att_out.class_ = AttributeClass::Address; break;
+		case AttributeForm::Block2:
+		case AttributeForm::Block4:
+		case AttributeForm::Block:
+		case AttributeForm::Block1:
+			att_out.class_ = AttributeClass::Block; break;
+		case AttributeForm::Data2:
+		case AttributeForm::Data4:
+		case AttributeForm::Data8:
+		case AttributeForm::Data1:
+		case AttributeForm::SData:
+		case AttributeForm::UData:
+			att_out.class_ = AttributeClass::Constant; break;
+		case AttributeForm::String:
+		case AttributeForm::Strp:
+			att_out.class_ = AttributeClass::String; break;
+		case AttributeForm::Flag:
+		case AttributeForm::FlagPresent:
+			att_out.class_ = AttributeClass::Flag; break;
+		case AttributeForm::RefAddr:
+			att_out.class_ = AttributeClass::Reference; break;
+		case AttributeForm::Ref1:
+		case AttributeForm::Ref2:
+		case AttributeForm::Ref4:
+		case AttributeForm::Ref8:
+		case AttributeForm::RefUData:
+		case AttributeForm::RefSig8:
+			att_out.class_ = AttributeClass::UnitReference; break;
+		case AttributeForm::Indirect:
+			att_out.class_ = AttributeClass::None; break;
+		case AttributeForm::SecOffset:
+			att_out.class_ = AttributeClass::SectionPointer; break;
+		case AttributeForm::ExprLoc:
+			att_out.class_ = AttributeClass::ExprLoc; break;
+		default:
+			att_out.class_ = AttributeClass::None; break;
+		}
 
-    int32_t uleb_read(uint8_t data[], /*out*/ uint64_t &value)
-    {
-        int32_t i = 0;
-        value = 0; // Zero 
-        
-        for (uint8_t shift = 0; i <= (uint8_t)sizeof(value); shift += 7, i++)
-        {
-            value |= ((uint64_t)data[i] << shift);
-            if ((data[i] & 0b10000000) == 0) return i + 1;
-            else value &= ~((uint64_t)(0b10000000 << shift));
-        }
+     end:
+		return buffer - bufferStart;
+	}
 
-        // Consume any extra bytes
-        while (data[i++] & 0b10000000) { }
-        return i;
-    }
+
+
 
     // TODO: Fix
-    //DIEDefinition DIEDefinition::parse(glue::IFile &file)
-    //{
-    //    uint32_t tag = 0;
-    //    DIEDefinition def{};
-    //    bool hasChildren = false;
-    //    uint8_t buffer[16] = { 0 };
+    uint32_t DebugInfoEntry::parse(const uint8_t* buffer, std::size_t length, DebugInfoEntry& entry_out)
+    {
+		entry_out = DebugInfoEntry{};
+		const uint8_t* bufferEnd = buffer + length;
 
-    //    file.read(buffer, sizeof(id));
-    //    uleb_read(buffer, def.id);
+        uint32_t tag = 0;
+        bool hasChildren = false;
 
-    //    file.read(buffer, sizeof(tag));
-    //    uleb_read(buffer, tag);
-    //    def.tag = (DIEType)tag;
+		buffer += dwarf::uleb_read(buffer, entry_out.id);
+		buffer += dwarf::uleb_read(buffer, tag);
+		
+		entry_out.tag = static_cast<DIEType>(tag);
+		hasChildren = buffer[0] != 0;
+		buffer++;
+        
+        auto atts = std::vector<AttributeDefinition>();
 
-    //    file.read(buffer, 1);
-    //    hasChildren = buffer[0] != 0;
-    //    
-    //    auto atts = glue::new_IList<AttributeDefinition>();
+        AttributeDefinition att;
 
-    //    AttributeDefinition att;
-    //    while (true)
-    //    {
-    //        uint32_t name, form;
-    //        file.read(buffer, sizeof(name));
-    //        uleb_read(buffer, name);
+        // Assign attributes
+        if ((entry_out.attributeCount = atts.size()) != 0)
+		{
+			auto copy = std::unique_ptr<AttributeDefinition[]>(new AttributeDefinition[atts.size()]);
+			std::memcpy(copy.get(), atts.data(), atts.size() * sizeof(AttributeDefinition));
+			entry_out.attributes = std::move(copy);
+        }
 
-    //        file.read(buffer, sizeof(form));
-    //        uleb_read(buffer, form);
+        // Handle child definitions
+        if (hasChildren)
+        {
+			std::vector<DebugInfoEntry> children{};
 
-    //        // Found end-of-attributes
-    //        if (name == 0 && form == 0) break;
+            while (true)
+            {
+				DebugInfoEntry child;
+				buffer += parse(buffer, bufferEnd - buffer, child);
 
-    //        att.name = (AttributeName)name;
-    //        att.form = (AttributeForm)form;
+                if (child.id != 0 || child.tag != DIEType::None) {
+                    children.emplace_back(std::move(child));
+                }
+				else break; // Found NULL entry, end sibling chain
+            }
 
-    //        switch (att.form)
-    //        {
-    //        case AttributeForm::Address:
-    //            att.class_ = AttributeClass::Address; break;
-    //        case AttributeForm::Block2:
-    //        case AttributeForm::Block4:
-    //        case AttributeForm::Block:
-    //        case AttributeForm::Block1:
-    //            att.class_ = AttributeClass::Block; break;
-    //        case AttributeForm::Data2:
-    //        case AttributeForm::Data4:
-    //        case AttributeForm::Data8:
-    //        case AttributeForm::Data1:
-    //        case AttributeForm::SData:
-    //        case AttributeForm::UData:
-    //            att.class_ = AttributeClass::Constant; break;
-    //        case AttributeForm::String:
-    //        case AttributeForm::Strp:
-    //            att.class_ = AttributeClass::String; break;
-    //        case AttributeForm::Flag:
-    //        case AttributeForm::FlagPresent:
-    //            att.class_ = AttributeClass::Flag; break;
-    //        case AttributeForm::RefAddr:
-    //            att.class_ = AttributeClass::Reference; break;
-    //        case AttributeForm::Ref1:
-    //        case AttributeForm::Ref2:
-    //        case AttributeForm::Ref4:
-    //        case AttributeForm::Ref8:
-    //        case AttributeForm::RefUData:
-    //        case AttributeForm::RefSig8:
-    //            att.class_ = AttributeClass::UnitReference; break;
-    //        case AttributeForm::Indirect:
-    //            att.class_ = AttributeClass::None; break;
-    //        case AttributeForm::SecOffset:
-    //            att.class_ = AttributeClass::SectionPointer; break;
-    //        case AttributeForm::ExprLoc:
-    //            att.class_ = AttributeClass::ExprLoc; break;
-    //        default:
-    //            att.class_ = AttributeClass::None; break;
-    //        }
-    //        atts->add(att);
-    //    }
+			if ((entry_out.childCount = children.size()) != 0)
+			{
+				auto copy = std::unique_ptr<DebugInfoEntry[]>(new DebugInfoEntry[atts.size()]);
+				std::memcpy(copy.get(), atts.data(), atts.size() * sizeof(DebugInfoEntry));
+				entry_out.children = std::move(copy);
+			}
+        }
 
-    //    // Assign attributes
-    //    if ((def.attributeCount = atts->count()) != 0) {
-    //        def.attributes = atts->toArray();
-    //    }
-
-    //    // Handle child definitions
-    //    if (hasChildren)
-    //    {
-    //        auto children = glue::new_IList<DIEDefinition>();
-
-    //        while (true)
-    //        {
-    //            DIEDefinition child = parse(file);
-    //            if (child.id != 0 || child.tag != DIEType::None) {
-    //                children->add(child);
-    //            }
-    //        }
-
-    //        if ((def.childCount = children->count()) != 0) {
-    //            def.children = children->toArray();
-    //        }
-
-    //        delete children;
-    //    }
-    //    return def;
-    //}
+        return length - (bufferEnd - buffer);
+    }
 
 }

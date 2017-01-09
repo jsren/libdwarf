@@ -1,15 +1,17 @@
-/* dwarf.h - (c) James S Renwick 2015-16 */
+/* dwarf.h - (c) James S Renwick 2015-17 */
 #pragma once
 #include <cstddef>
 #include <stdint.h>
 #include <cstring>
+#include <memory>
 #include "const.h"
+#include "../array.h"
 
 namespace dwarf
 {
-    using dwarfArch = bool;
-    constexpr dwarfArch dwarf32 = true;
-    constexpr dwarfArch dwarf64 = false;
+
+    int32_t uleb_read(const uint8_t data[], uint32_t &value_out);
+    int32_t uleb_read(const uint8_t data[], uint64_t &value_out);
 
     enum class SectionType : uint8_t
     {
@@ -23,59 +25,87 @@ namespace dwarf
     };
 
 
-    template<dwarfArch dwarf32=dwarf32>
-    struct DwarfSection
+    SectionType SectionTypeFromString(const char* str);
+
+
+    struct DwarfSection32
     {
-        SectionType type;
-        uint8_t* data;
-        uint32_t size;
+        SectionType type = SectionType::invalid;
+		elf::Pointer<uint8_t[]> data{};
+		uint32_t size{};
 
-        DwarfSection() noexcept = default;
+    public:
+        DwarfSection32() = default;
 
-        explicit DwarfSection(SectionType type, const uint8_t* data, uint32_t size) noexcept
-            : type(type), data(nullptr), size(size)
-        {
-            this->data = new uint8_t[size];
-            memcpy(this->data, data, size);
-        }
+        inline DwarfSection32(SectionType type, elf::Pointer<uint8_t[]> data, uint32_t size)
+            : type(type), data(std::move(data)), size(size) { }
 
-        inline ~DwarfSection() { if (data != nullptr) delete[] data; }
-    };
-    template<>
-    struct DwarfSection<dwarf64>
-    {
-        SectionType type;
-        uint8_t* data;
-        uint64_t size;
-
-        DwarfSection() noexcept = default;
-
-        explicit DwarfSection(SectionType type, const uint8_t* data, uint64_t size) noexcept 
-            : type(type), data(nullptr), size(size) 
-        {
-            this->data = new uint8_t[size];
-            memcpy(this->data, data, size);
-        }
-
-        inline ~DwarfSection() { if (data != nullptr) delete[] data; }
-    };
-
-
-    template<dwarfArch dwarf32=dwarf32>
-    struct DwarfContext
-    {
-        const DwarfSection<>* sections;
-
-        explicit DwarfContext(const DwarfSection<> sections[6]) noexcept
-            : sections(sections) { }
-    };
-    template<>
-    struct DwarfContext<dwarf64>
-    {
-        const DwarfSection<dwarf64>* sections;
         
-        explicit DwarfContext(const DwarfSection<dwarf64> sections[6], size_t sectionCount) noexcept
-            : sections(sections) { }
+        inline explicit DwarfSection32(const DwarfSection32& other) : type(other.type), size(other.size)
+        {
+            if (other.data.ownsData()) {
+                data.reset(new uint8_t[size], true); memcpy(this->data.get(), other.data.get(), size);
+            }
+            else data.reset(other.data.get(), false);
+        }
+        inline DwarfSection32& operator=(const DwarfSection32& other)
+        {
+            if (this == &other) return *this;
+            type = other.type; size = other.size;
+            data.reset(new uint8_t[size], true); 
+            memcpy(this->data.get(), other.data.get(), size);
+            return *this;
+        }
+    };
+
+
+    struct DwarfSection64
+    {
+        SectionType type = SectionType::invalid;
+        elf::Pointer<uint8_t[]> data{};
+        uint64_t size{};
+
+    public:
+        DwarfSection64()  = default;
+
+        inline DwarfSection64(SectionType type, elf::Pointer<uint8_t[]> data, uint64_t size) noexcept
+            : type(type), data(std::move(data)), size(size) { }
+
+        inline explicit DwarfSection64(const DwarfSection64& other) : type(other.type), size(other.size)
+        {
+            if (other.data.ownsData()) {
+                data.reset(new uint8_t[size], true); memcpy(this->data.get(), other.data.get(), size);
+            }
+            else data.reset(other.data.get(), false);
+        }
+
+        inline DwarfSection64& operator=(const DwarfSection64& other)
+        {
+            if (this == &other) return *this;
+            type = other.type; size = other.size;
+            data.reset(new uint8_t[size], true);
+            memcpy(this->data.get(), other.data.get(), size);
+            return *this;
+        }
+    };
+
+
+    struct DwarfContext32
+    {
+        const Array<DwarfSection32> sections{0};
+
+    public:
+        inline explicit DwarfContext32(Array<DwarfSection32>&& sections)
+            : sections(std::move(sections)) { }
+    };
+
+    struct DwarfContext64
+    {
+        const Array<DwarfSection64> sections{0};
+
+    public:
+        inline explicit DwarfContext64(Array<DwarfSection64>&& sections)
+            : sections(std::move(sections)) { }
     };
 
 }

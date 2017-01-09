@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-namespace dwarf
+namespace dwarf4
 {
     // Tags
     enum class DIEType : uint16_t

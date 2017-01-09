@@ -1,18 +1,20 @@
-/* elf.h - (c) James S Renwick 2015 */
+/* elf.h - (c) James S Renwick 2015-2017 */
 #pragma once
-#include <stdint.h>
-#include "platform.h"
 
 #include "platform.h"
 #include "glue.h"
+#include "../pointer.h"
+
+#include <stdint.h>
+#include <memory>
 
 #define EI_NIDENT 16
 
+
 namespace elf
 {
-    typedef signed long int error_t;
 
-    extern const char emptyName[1];
+    typedef signed long int error_t;
 
     _pack_start
     struct Header32
@@ -64,15 +66,140 @@ namespace elf
         uint32_t    sh_addralign; // Section alignment constraints
         uint32_t    sh_entsize;   // Entry size for tabular sections
 
-        inline const char* getName(const char* strTab, size_t strTabLength) noexcept
-        {
-            // Handle empty string table
-            if (strTabLength == 0) return emptyName;
-
-            // Otherwise, return string from offset
-            return &strTab[this->sh_name];
-        }
     } _pack_end;
+
+    struct SectionTable32
+    {
+        Pointer<const SectionHeader32[]> headers;
+        uint16_t headerCount;
+
+        inline const SectionHeader32& operator[](size_t index) const {
+            return headers[index];
+        }
+    };
+
+
+    enum class SegmentType : uint32_t
+    {
+        Null          = 0x0, // Unused - ignore entry
+        Load          = 0x1, // Segment is loadable
+        Dynamic       = 0x2, // Segment contains dynamic linking information
+        Interpreted   = 0x3, // Interpreter location for interpreted executables
+        Note          = 0x4, // Location and size of auxiliary information
+        SHLib         = 0x5, // Reserved
+        ProgramHeader = 0x6  // Location and size of Program Header for loading
+    };
+
+    enum class SegmentFlags : uint32_t
+    {
+        Executable = 0x0, // Segment is executable
+        Writable   = 0x1, // Segment can be written to
+        Readable   = 0x2  // Segment can be read from
+    };
+
+
+    /* Entry describing a loaded program segment. */
+    _pack_start
+    struct ProgramHeaderEntry32
+    {
+        SegmentType  p_type;   // Segment type
+        uint32_t     p_offset; // Segment offset in source file
+        uint32_t     p_vaddr;  // Segment virtual address load location
+        uint32_t     p_paddr;  // Segment physical address load location
+        uint32_t     p_filesz; // Segment source size in bytes
+        uint32_t     p_memsz;  // Segment load size in bytes
+        SegmentFlags p_flags;  // Segment flags
+        uint32_t     p_align;  // Segment load alignment
+
+    } _pack_end;
+
+
+    struct ProgramHeader32
+    {
+        Pointer<const ProgramHeaderEntry32[]> segments;
+        uint32_t segmentCount;
+
+        inline const ProgramHeaderEntry32& operator[](size_t index) const {
+            return segments[index];
+        }
+    };
+
+
+
+    struct StringTable32
+    {
+    private:
+        static const char emptyName[1];
+
+    public:
+        Pointer<const char[]> buffer{};
+        uint32_t size = 0;
+
+        StringTable32() = default;
+
+        StringTable32(Pointer<const char[]> buffer, uint32_t size) 
+            : buffer(std::move(buffer)), size(size) { }
+    public:
+        const char* operator[](size_t index) const {
+            return size != 0 ? &buffer[index] : emptyName;
+        }
+    };
+
+
+    enum class SymbolBinding : uint8_t
+    {
+        Local  = 0,
+        Global = 1,
+        Weak   = 2
+    };
+
+    enum class SymbolType : uint8_t
+    {
+        None     = 0,
+        Object   = 1,
+        Function = 2,
+        Section  = 3,
+        File     = 4
+    };
+
+    _pack_start
+    struct SymbolTableEntry32
+    {
+        uint32_t st_name;
+        uint32_t st_value;
+        uint32_t st_size;
+        
+        SymbolType    st_info_type    : 4;
+        SymbolBinding st_info_binding : 4;
+        uint8_t       st_other;
+        uint16_t      st_shndx; // Section header index (or special?)
+
+    } _pack_end;
+
+    static_assert(sizeof(SymbolTableEntry32) == 16, "");
+
+
+    struct SymbolTable32
+    {
+        Pointer<const SymbolTableEntry32[]> entries;
+        uint32_t entryCount;
+
+         const SymbolTableEntry32& operator[](size_t index) const {
+            return entries[index];
+        }
+    };
+
+    _pack_start
+    struct NoteEntry
+    {
+        uint32_t namesz;
+        uint32_t descsz;
+        uint32_t type;
+
+        Pointer<const char[]> name;
+        Pointer<const char[]> description;
+    } _pack_end;
+
 
 
     error_t parseElfHeader(const uint8_t* buffer, size_t bufferSize,
@@ -81,7 +208,12 @@ namespace elf
     error_t parseSectionHeader(const uint8_t* buffer, size_t bufferSize,
         SectionHeader32& header_out) noexcept;
 
-    error_t parseSectionTable(const uint8_t* buffer, size_t bufferSize,
-        decltype(Header32::e_shnum) sectionCount, SectionHeader32*& table_out);
+	error_t parseSectionTable(const uint8_t* buffer, size_t bufferSize,
+        uint16_t sectionCount, SectionTable32& table_out, bool copyData = true);
 
+    error_t parseSymbolTable(const uint8_t* buffer, size_t bufferSize,
+        uint32_t entryCount, SymbolTable32& table_out, bool copyData = true);
+
+    error_t parseProgramHeader(const uint8_t* buffer, size_t bufferSize,
+        uint16_t entryCount, ProgramHeader32& header_out, bool copyData = true);
 }

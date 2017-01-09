@@ -2,91 +2,22 @@
    ------------------------------
    Test file for libdwarf.
 */
-#include <stdio.h>
-#include <assert.h>
-#include <cstring>
-#include <memory>
-
 
 #include "dwarf.h"
 #include "format.h"
 #include "elf.h"
+#include "../lines.h"
+
+#include <stdio.h>
+#include <cstring>
+#include <memory>
+#include <vector>
+#include <assert.h>
+#include <algorithm>
 
 using namespace dwarf;
-
-template<class T>
-class List : public glue::IList<T>
-{
-private:
-    T *array;
-    size_t capacity;
-    size_t index;
-
-public:
-    List()
-    {
-        capacity = 0;
-        index    = 0;
-    }
-
-    void add(T item) override
-    {
-        // Perform expansion as necessary
-        if (index == capacity) 
-        {
-            // Perform initial alloc
-            if (capacity == 0) 
-            {
-                capacity = 10;
-                this->array = (T*)malloc(capacity * sizeof(T));
-            }
-            else
-            {
-                this->array = (T*)realloc(this->array,
-                    (capacity = (capacity + capacity / 2)));
-            }
-        }
-        array[index++] = item;
-    }
-
-    size_t count() override {
-        return this->index;
-    }
-    T &operator [](size_t index) override {
-        return this->array[index];
-    }
-
-    T *toArray() override 
-    {
-        T *newArray = (T*)malloc(index * sizeof(T));
-        memcpy(newArray, this->array, index * sizeof(T));
-        return newArray;
-    }
-};
-
-
-class FILEWrapper : public glue::IFile
-{
-private:
-    FILE *file;
-
-public:
-    FILEWrapper(FILE *file) : file(file) { }
-
-public:
-    int seek(size_t offset, glue::SeekMode mode) override 
-    {
-        return fseek(this->file, (long)offset, 
-            mode == glue::SeekMode::Absolute ? SEEK_SET : SEEK_CUR);
-    }
-    size_t read(void *buffer, size_t length) override {
-        return fread(buffer, 1, (long)length, this->file);
-    }
-    size_t getPosition() override {
-        return ftell(this->file);
-    }
-};
-
+using namespace dwarf2;
+using namespace dwarf4;
 
 /*
     The basic descriptive entity in DWARF is the debugging information entry (DIE). 
@@ -94,8 +25,11 @@ public:
     attributes that fills in details, and further describes the entity.
 */
 
-elf::Header32 fileHeader;
-elf::SectionHeader32* sectionTable;
+elf::Header32 fileHeader{};
+elf::SectionTable32 sectionTable{};
+
+std::vector<elf::SymbolTable32> symbolTables{};
+
 
 int main(int argc, const char** args)
 {
@@ -109,7 +43,7 @@ int main(int argc, const char** args)
     volatile size_t len = fread(buffer, 1, 53296, file);
     assert(len == 53296);
 
-    // Attempt to parse file
+    // Attempt to parse ELF header
     volatile auto error = elf::parseElfHeader(buffer, len, fileHeader);
     assert(error == sizeof(elf::Header32));
     
@@ -117,64 +51,140 @@ int main(int argc, const char** args)
     assert(len > fileHeader.e_shoff);
     error = elf::parseSectionTable(buffer + fileHeader.e_shoff, 
         len - fileHeader.e_shoff, fileHeader.e_shnum, sectionTable);
-    assert(error == fileHeader.e_shnum);
+    assert(error == 0);
 
-    // Get the string table
-    const elf::SectionHeader32* strtab = nullptr;
-    for (int i = 0; i < fileHeader.e_shnum; i++)
+    // Parse program header
+    elf::ProgramHeader32 programHeader{};
+
+    error = elf::parseProgramHeader(buffer + fileHeader.e_phoff, 
+        fileHeader.e_phnum * fileHeader.e_phentsize, fileHeader.e_phnum, programHeader);
+    assert(error == 0);
+
+    // Print program header
+    for (uint32_t i = 0; i < programHeader.segmentCount; i++)
     {
-        if (sectionTable[i].sh_type == elf::SectionType::StrTab) {
-            strtab = &sectionTable[i]; break;
+        const auto& segment = programHeader.segments[i];
+
+        printf("{Segment %-3d; type %03d; offset %08d; loadaddr %08d; length %08d; flags: %d}\n", i, segment.p_type, 
+            segment.p_offset, segment.p_vaddr, segment.p_filesz, segment.p_flags);
+    }
+    printf("-------------------------------------\n");
+
+    std::vector<elf::StringTable32> strtables{};
+
+
+    // Get special sections
+    for (int i = 0; i < sectionTable.headerCount; i++)
+    {
+        // Get string table
+        if (sectionTable[i].sh_type == elf::SectionType::StrTab)
+        {
+            strtables.emplace_back(
+                elf::Pointer<const char[]>(reinterpret_cast<char*>(buffer + sectionTable[i].sh_offset), false),
+                sectionTable[i].sh_size
+            );
+        }
+        // Parse symbol table(s)
+        else if (sectionTable[i].sh_type == elf::SectionType::SymTab)
+        {
+            elf::SymbolTable32 symTable{};
+
+            error = elf::parseSymbolTable(buffer + sectionTable[i].sh_offset,
+                len - sectionTable[i].sh_offset,
+                sectionTable[i].sh_size / sectionTable[i].sh_entsize,
+                symTable);
+            assert(error == 0);
+
+            symbolTables.emplace_back(std::move(symTable));
         }
     }
-    assert(strtab != nullptr);
+    assert(strtables.size() != 0);
 
 
-    dwarf::DwarfSection<>* sections = new dwarf::DwarfSection<>[6]();
+    // Print string table
+    for (auto& strtable : strtables)
+    {
+        for (uint32_t i = 0; i < strtable.size; i++)
+        {
+            printf("%05d: \"%s\"\n", i, strtable[i]);
+            i += strlen(strtable[i]);
+        }
+        printf("-------------------------------------\n");
+    }
+
+    // Print symbol table, skipping empty entry
+    for (size_t i = 1; i < symbolTables[0].entryCount; i++)
+    {
+        const char* str = strtables[1][symbolTables[0].entries[i].st_name];
+        printf("| Symbol '%s' type %d |\n", str, symbolTables[0].entries[i].st_info_type);
+    }
+
+
+    std::vector<DwarfSection32> sections{};
 
     // Print section info
     for (int i = 0; i < fileHeader.e_shnum; i++)
     {
-        const char* name = sectionTable[i].getName(
-            reinterpret_cast<const char*>(buffer + strtab->sh_offset), 
-            strtab->sh_size);
+        const char* name = strtables[0][sectionTable[i].sh_name];
 
-        printf("{Section '%-24s'; type %03d; length %08d}\n", name,
-            sectionTable[i].sh_type, sectionTable[i].sh_size);
+        printf("{Section '%-24s'; type %03d; offset %08d; length %08d}\n", name,
+			sectionTable[i].sh_type, sectionTable[i].sh_offset, sectionTable[i].sh_size);
 
-
-        dwarf::SectionType type;
-
-        if (strcmp(name, ".debug_info") == 0) {
-            type = dwarf::SectionType::debug_info;
-        }
-        else if (strcmp(name, ".debug_abbrev") == 0) {
-            type = dwarf::SectionType::debug_abbrev;
-        }
-        else if (strcmp(name, ".debug_aranges") == 0) {
-            type = dwarf::SectionType::debug_aranges;
-        }
-        else if (strcmp(name, ".debug_ranges") == 0) {
-            type = dwarf::SectionType::debug_ranges;
-        }
-        else if (strcmp(name, ".debug_line") == 0) {
-            type = dwarf::SectionType::debug_line;
-        }
-        else if (strcmp(name, ".debug_str") == 0) {
-            type = dwarf::SectionType::debug_str;
-        }
-        else continue;
-
-        // Check for duplicates
-        assert(sections[(uint8_t)type-1].type == dwarf::SectionType::invalid);
+        SectionType type = SectionTypeFromString(name);
+        if (type == SectionType::invalid) continue;
 
         // Copy section
-        sections[(uint8_t)type-1] = dwarf::DwarfSection<>(type, 
-            buffer + sectionTable[i].sh_offset, sectionTable[i].sh_size);
+        sections.emplace_back(type, 
+            elf::Pointer<uint8_t[]>(buffer + sectionTable[i].sh_offset, false), 
+            sectionTable[i].sh_size);
     }
 
-    auto context = dwarf::DwarfContext<>(sections);
+    DwarfContext32 context(Array<DwarfSection32>(sections.data(), sections.size(), false));
 
+    // Get compilation unit header from debug info
+	dwarf4::CompilationUnitHeader32 unitHeader{};
+    dwarf4::DebugInfoEntry entry1;
+
+    auto iter = std::find_if(context.sections.begin(), context.sections.end(), 
+        [](auto& s) { return s.type == SectionType::debug_info; });
+
+    if (iter != context.sections.end())
+    {
+        const DwarfSection32& debug_info = *iter;
+
+        memcpy(&unitHeader, debug_info.data.get(), sizeof(dwarf4::CompilationUnitHeader32));
+
+        // Then parse DIE
+        //dwarf4::DebugInfoEntry::parse(
+        //    debug_info.data.get() + sizeof(dwarf4::CompilationUnitHeader32),
+        //    debug_info.size - sizeof(dwarf4::CompilationUnitHeader32), entry1);
+    }
+
+
+    iter = std::find_if(context.sections.begin(), context.sections.end(),
+        [](auto& s) { return s.type == SectionType::debug_line; });
+
+    if (iter != context.sections.end())
+    {
+        const DwarfSection32& debug_line = *iter;
+
+        // Parse header
+        size_t length;
+        dwarf2::LineNumberProgramHeader32 header;
+
+        auto error = dwarf2::LineNumberProgramHeader32::parse(debug_line.data.get(), 
+            debug_line.size, header, length, false);
+        assert(error == 0);
+
+        for (auto& file : header.fileEntries)
+        {
+            if (file.includeDirIndex != 0) {
+                printf("| file '%s/%s' |\n", header.includeDirs[file.includeDirIndex - 1].get(), file.filepath.get());
+            }
+            else printf("| file '%s/%s' |\n", ".", file.filepath.get());
+        }
+
+    }
 
     // Delete buffer
     delete[] buffer;

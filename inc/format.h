@@ -10,16 +10,15 @@
 #pragma once
 #include <stdint.h>
 #include <malloc.h>
-#include "platform.h"
+#include <memory>
+#include <type_traits>
 
 #include "const.h"
 #include "platform.h"
 #include "glue.h"
 
-namespace dwarf
+namespace dwarf4
 {
-    int32_t uleb_read(uint8_t data[], /*out*/ uint32_t &value);
-    int32_t uleb_read(uint8_t data[], /*out*/ uint64_t &value);
 
     // .debug_info section header
     _pack_start
@@ -124,43 +123,52 @@ namespace dwarf
     };
 
 
-    class DIEDefinition
+    class DebugInfoEntry
     {
     public:
-        uint64_t id;
-        DIEType tag;
+		uint64_t id{};
+		DIEType tag{};
 
         size_t attributeCount;
-        AttributeDefinition *attributes;
+        std::unique_ptr<AttributeDefinition[]> attributes;
 
         size_t childCount;
-        DIEDefinition *children;
+		std::unique_ptr<DebugInfoEntry[]> children;
 
     public:
 
-        DIEDefinition() { }
-        DIEDefinition(uint64_t id, DIEType tag, size_t childCount,
-            DIEDefinition children[]) : id(id), tag(tag), childCount(childCount),
-            children(children) { }
+        DebugInfoEntry() { }
+        DebugInfoEntry(uint64_t id, DIEType tag, size_t childCount, std::unique_ptr<DebugInfoEntry[]> children) 
+			: id(id), tag(tag), childCount(childCount), children(std::move(children)) { }
+
+		DebugInfoEntry(DebugInfoEntry&&) = default;
+		DebugInfoEntry& operator =(DebugInfoEntry&&) = default;
         
     public:
-        static DIEDefinition parse(glue::IFile &file);
-    };
+		static uint32_t parse(const uint8_t* buffer, std::size_t length, DebugInfoEntry& entry_out);
+	};
 
 
     class Attribute
     {
     public:
-        AttributeDefinition &definition;
-        uint8_t *valueData;
+		AttributeDefinition &definition;
+		std::unique_ptr<uint8_t[]> valueData{};
 
     public:
-        Attribute(AttributeDefinition &def, uint8_t *data)
-            :definition(def), valueData(data) { }
+        Attribute(AttributeDefinition &def, std::unique_ptr<uint8_t[]> data)
+            : definition(def), valueData(std::move(data)) { }
 
     public:
-        template<class T>
-        inline T valueAs() { return *((T*)(this->valueData)); }
+        template<class T, class=std::enable_if_t<std::is_trivially_copyable<T>::value>>
+        inline T valueAs() { 
+			T value; std::memcpy(&value, this->valueData.get(), sizeof(T));
+			return value;
+		}
 
     };
+
+
+
+
 }
