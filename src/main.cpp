@@ -140,28 +140,12 @@ int main(int argc, const char** args)
     }
 
     DwarfContext32 context(Array<DwarfSection32>(sections.data(), sections.size(), false));
-
-    // Get compilation unit header from debug info
-	dwarf4::CompilationUnitHeader32 unitHeader{};
-    dwarf4::DebugInfoEntry entry1;
-
-    auto iter = std::find_if(context.sections.begin(), context.sections.end(), 
-        [](auto& s) { return s.type == SectionType::debug_info; });
-
-    if (iter != context.sections.end())
-    {
-        const DwarfSection32& debug_info = *iter;
-
-        memcpy(&unitHeader, debug_info.data.get(), sizeof(dwarf4::CompilationUnitHeader32));
-
-        // Then parse DIE
-        //dwarf4::DebugInfoEntry::parse(
-        //    debug_info.data.get() + sizeof(dwarf4::CompilationUnitHeader32),
-        //    debug_info.size - sizeof(dwarf4::CompilationUnitHeader32), entry1);
-    }
+    context.buildIndexes();
 
 
-    iter = std::find_if(context.sections.begin(), context.sections.end(),
+    context[SectionType::debug_line]
+
+    auto iter = std::find_if(context.sections.begin(), context.sections.end(),
         [](auto& s) { return s.type == SectionType::debug_line; });
 
     if (iter != context.sections.end())

@@ -4,11 +4,14 @@
 #include <stdint.h>
 #include <cstring>
 #include <memory>
+#include <unordered_map>
 #include "const.h"
 #include "../array.h"
+#include "format.h"
 
 namespace dwarf
 {
+    typedef signed long int error_t;
 
     int32_t uleb_read(const uint8_t data[], uint32_t &value_out);
     int32_t uleb_read(const uint8_t data[], uint64_t &value_out);
@@ -92,20 +95,65 @@ namespace dwarf
 
     struct DwarfContext32
     {
+        static constexpr const uint8_t bits = 32;
+
         const Array<DwarfSection32> sections{0};
+
+        dwarf4::CompilationUnitHeader32 header;
+
+        std::unordered_map<uint64_t, std::size_t> abbreviationIndex{};
+
+        std::unordered_map<uint64_t, std::size_t> entryIDIndex{};
+        std::unordered_map<dwarf4::DIEType, std::size_t> entryTypeIndex{};
 
     public:
         inline explicit DwarfContext32(Array<DwarfSection32>&& sections)
-            : sections(std::move(sections)) { }
+            : sections(std::move(sections))
+        {
+            for (auto& section : sections) if (section.type == SectionType::debug_info) {
+                memcpy(&header, section.data.get(), sizeof(header)); break;
+            }
+        }
+
+    public:
+        error_t buildIndexes();
+
+    public:
+        inline const bool operator[](SectionType type, DwarfSection32& section_out) const {
+            for (auto& section : sections) {
+                if (section.type == type) { section_out = section; return true; }
+            }
+        }
+
     };
 
     struct DwarfContext64
     {
+        static constexpr const uint8_t bits = 64;
+
         const Array<DwarfSection64> sections{0};
+        dwarf4::CompilationUnitHeader32 header;
+
+        using EntryIndex = std::tuple<dwarf4::DIEType, uint64_t, const char*, std::size_t>;
+        std::unordered_map<uint64_t, std::size_t> abbreviationIndex{};
+        std::vector<EntryIndex> entryIDIndex{};
 
     public:
         inline explicit DwarfContext64(Array<DwarfSection64>&& sections)
-            : sections(std::move(sections)) { }
+            : sections(std::move(sections))
+        { 
+            for (auto& section : sections) if (section.type == SectionType::debug_info) {
+                memcpy(&header, section.data.get(), sizeof(header)); break;
+            }
+        }
+
+    public:
+        error_t buildIndexes();
+
+    public:
+        inline const DwarfSection64& operator[](SectionType type) const {
+            for (auto& section : sections) { if (section.type == type) return section; }
+        }
     };
 
 }

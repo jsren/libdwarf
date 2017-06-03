@@ -115,48 +115,77 @@ namespace dwarf4
         
     };
 
-    struct AttributeDefinition
+    struct AttributeSpecification
     {
         AttributeName name;
         AttributeForm form;
         AttributeClass class_;
+
+    public:
+        static uint32_t parse(const uint8_t* buffer, std::size_t length, AttributeSpecification& attr_out);
+
+    };
+
+
+
+    class DebugInfoAbbreviation
+    {
+    public:
+		uint64_t id{};
+		DIEType tag{};
+
+        size_t attributeCount{};
+        const void* attributeStart{};
+
+        size_t childCount{};
+        std::unique_ptr<uint64_t[]> childIDs{};
+
+    public:
+
+        DebugInfoAbbreviation() = default;
+
+        DebugInfoAbbreviation(uint64_t id, DIEType tag, size_t attributeCount, 
+            const void* attributeStart, size_t childCount, std::unique_ptr<uint64_t[]> childIDs)
+			: id(id), tag(tag), attributeCount(attributeCount), attributeStart(attributeStart), 
+            childCount(childCount), childIDs(std::move(childIDs)) { }
+
+        DebugInfoAbbreviation(DebugInfoAbbreviation&&) = default;
+        DebugInfoAbbreviation& operator =(DebugInfoAbbreviation&&) = default;
+        
+    public:
+		static uint32_t parse(const uint8_t* buffer, std::size_t length, DebugInfoAbbreviation& entry_out);
+	};
+
+
+    struct AttributeValue
+    {
+
     };
 
 
     class DebugInfoEntry
     {
     public:
-		uint64_t id{};
-		DIEType tag{};
-
+        uint64_t index;
+        uint64_t abbreviationID;
         size_t attributeCount;
-        std::unique_ptr<AttributeDefinition[]> attributes;
-
-        size_t childCount;
-		std::unique_ptr<DebugInfoEntry[]> children;
+        std::unique_ptr<AttributeValue[]> attributes;
 
     public:
-
-        DebugInfoEntry() { }
-        DebugInfoEntry(uint64_t id, DIEType tag, size_t childCount, std::unique_ptr<DebugInfoEntry[]> children) 
-			: id(id), tag(tag), childCount(childCount), children(std::move(children)) { }
-
-		DebugInfoEntry(DebugInfoEntry&&) = default;
-		DebugInfoEntry& operator =(DebugInfoEntry&&) = default;
-        
-    public:
-		static uint32_t parse(const uint8_t* buffer, std::size_t length, DebugInfoEntry& entry_out);
-	};
+        DebugInfoEntry() = default;
+        DebugInfoEntry(DebugInfoEntry&&) = default;
+        DebugInfoEntry& operator =(DebugInfoEntry&&) = default;
+    };
 
 
     class Attribute
     {
     public:
-		AttributeDefinition &definition;
+		AttributeSpecification &definition;
 		std::unique_ptr<uint8_t[]> valueData{};
 
     public:
-        Attribute(AttributeDefinition &def, std::unique_ptr<uint8_t[]> data)
+        Attribute(AttributeSpecification &def, std::unique_ptr<uint8_t[]> data)
             : definition(def), valueData(std::move(data)) { }
 
     public:
@@ -167,8 +196,5 @@ namespace dwarf4
 		}
 
     };
-
-
-
 
 }

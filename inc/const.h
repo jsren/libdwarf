@@ -73,6 +73,7 @@ namespace dwarf4
 
     enum class AttributeName : uint16_t
     {
+        None               = 0x0,
         AbstractOrigin     = 0x31, // Instance of inline subprogram
         Accessibility      = 0x32, // C++ declarations, base classes & inherited members
         AddressClass       = 0x33, // Pointer or reference or function ptr type
@@ -169,6 +170,7 @@ namespace dwarf4
 
     enum class AttributeForm
     {
+        None        = 0x0,
         Address     = 0x01,
         Block2      = 0x03,
         Block4      = 0x04,
