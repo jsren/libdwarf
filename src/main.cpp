@@ -143,20 +143,14 @@ int main(int argc, const char** args)
     context.buildIndexes();
 
 
-    context[SectionType::debug_line]
-
-    auto iter = std::find_if(context.sections.begin(), context.sections.end(),
-        [](auto& s) { return s.type == SectionType::debug_line; });
-
-    if (iter != context.sections.end())
+    DwarfSection32 debug_line;
+    if ((debug_line = context[SectionType::debug_line]))
     {
-        const DwarfSection32& debug_line = *iter;
-
         // Parse header
         size_t length;
         dwarf2::LineNumberProgramHeader32 header;
 
-        auto error = dwarf2::LineNumberProgramHeader32::parse(debug_line.data.get(), 
+        auto error = dwarf2::LineNumberProgramHeader32::parse(debug_line.data.get(),
             debug_line.size, header, length, false);
         assert(error == 0);
 
@@ -167,7 +161,6 @@ int main(int argc, const char** args)
             }
             else printf("| file '%s/%s' |\n", ".", file.filepath.get());
         }
-
     }
 
     // Delete buffer

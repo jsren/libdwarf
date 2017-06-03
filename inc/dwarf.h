@@ -43,21 +43,11 @@ namespace dwarf
         inline DwarfSection32(SectionType type, elf::Pointer<uint8_t[]> data, uint32_t size)
             : type(type), data(std::move(data)), size(size) { }
 
-        
-        inline explicit DwarfSection32(const DwarfSection32& other) : type(other.type), size(other.size)
-        {
-            if (other.data.ownsData()) {
-                data.reset(new uint8_t[size], true); memcpy(this->data.get(), other.data.get(), size);
-            }
-            else data.reset(other.data.get(), false);
-        }
-        inline DwarfSection32& operator=(const DwarfSection32& other)
-        {
-            if (this == &other) return *this;
-            type = other.type; size = other.size;
-            data.reset(new uint8_t[size], true); 
-            memcpy(this->data.get(), other.data.get(), size);
-            return *this;
+        explicit DwarfSection32(const DwarfSection32& other);
+        DwarfSection32& operator=(const DwarfSection32& other);
+
+        inline operator bool() const { 
+            return type != SectionType::invalid;
         }
     };
 
@@ -69,26 +59,16 @@ namespace dwarf
         uint64_t size{};
 
     public:
-        DwarfSection64()  = default;
+        DwarfSection64() = default;
 
         inline DwarfSection64(SectionType type, elf::Pointer<uint8_t[]> data, uint64_t size) noexcept
             : type(type), data(std::move(data)), size(size) { }
 
-        inline explicit DwarfSection64(const DwarfSection64& other) : type(other.type), size(other.size)
-        {
-            if (other.data.ownsData()) {
-                data.reset(new uint8_t[size], true); memcpy(this->data.get(), other.data.get(), size);
-            }
-            else data.reset(other.data.get(), false);
-        }
+        explicit DwarfSection64(const DwarfSection64& other);
+        DwarfSection64& operator=(const DwarfSection64& other);
 
-        inline DwarfSection64& operator=(const DwarfSection64& other)
-        {
-            if (this == &other) return *this;
-            type = other.type; size = other.size;
-            data.reset(new uint8_t[size], true);
-            memcpy(this->data.get(), other.data.get(), size);
-            return *this;
+        inline operator bool() const {
+            return type != SectionType::invalid;
         }
     };
 
@@ -101,31 +81,24 @@ namespace dwarf
 
         dwarf4::CompilationUnitHeader32 header;
 
+        using EntryIndex = std::tuple<dwarf4::DIEType, uint64_t, const char*, std::size_t>;
         std::unordered_map<uint64_t, std::size_t> abbreviationIndex{};
-
-        std::unordered_map<uint64_t, std::size_t> entryIDIndex{};
-        std::unordered_map<dwarf4::DIEType, std::size_t> entryTypeIndex{};
+        std::vector<EntryIndex> entryIDIndex{};
 
     public:
         inline explicit DwarfContext32(Array<DwarfSection32>&& sections)
             : sections(std::move(sections))
         {
-            for (auto& section : sections) if (section.type == SectionType::debug_info) {
+            for (auto& section : this->sections) if (section.type == SectionType::debug_info) {
                 memcpy(&header, section.data.get(), sizeof(header)); break;
             }
         }
 
     public:
         error_t buildIndexes();
-
-    public:
-        inline const bool operator[](SectionType type, DwarfSection32& section_out) const {
-            for (auto& section : sections) {
-                if (section.type == type) { section_out = section; return true; }
-            }
-        }
-
+        const DwarfSection32& operator[](SectionType type) const;
     };
+
 
     struct DwarfContext64
     {
@@ -142,18 +115,14 @@ namespace dwarf
         inline explicit DwarfContext64(Array<DwarfSection64>&& sections)
             : sections(std::move(sections))
         { 
-            for (auto& section : sections) if (section.type == SectionType::debug_info) {
+            for (auto& section : this->sections) if (section.type == SectionType::debug_info) {
                 memcpy(&header, section.data.get(), sizeof(header)); break;
             }
         }
 
     public:
         error_t buildIndexes();
-
-    public:
-        inline const DwarfSection64& operator[](SectionType type) const {
-            for (auto& section : sections) { if (section.type == type) return section; }
-        }
+        const DwarfSection64& operator[](SectionType type) const;
     };
 
 }

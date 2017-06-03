@@ -93,8 +93,6 @@ namespace dwarf4
 		entry_out = DebugInfoAbbreviation{};
 		const uint8_t* origBuffer = buffer;
 
-        
-
         // Read header
         uint64_t id; uint32_t type;
         buffer += readHeader(buffer, length, entry_out.id, type);
@@ -139,8 +137,6 @@ namespace dwarf4
         return buffer - origBuffer;
     }
 
-
-    
 
 
     uint32_t AttributeSpecification::parse(const uint8_t* buffer, std::size_t length, AttributeSpecification& att_out)

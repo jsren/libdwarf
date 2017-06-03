@@ -87,6 +87,70 @@ namespace dwarf
     }
 
 
+    DwarfSection32::DwarfSection32(const DwarfSection32& other) : type(other.type), size(other.size)
+    {
+        if (other.data.ownsData())
+        {
+            data.reset(new uint8_t[size], true);
+            memcpy(this->data.get(), other.data.get(), size);
+        }
+        else data.reset(other.data.get(), false);
+    }
+
+    DwarfSection32& DwarfSection32::operator=(const DwarfSection32& other)
+    {
+        if (this == &other) return *this;
+
+        type = other.type; size = other.size;
+        data.reset(new uint8_t[size], true);
+        memcpy(this->data.get(), other.data.get(), size);
+
+        return *this;
+    }
+
+    const DwarfSection32& DwarfContext32::operator[](SectionType type) const
+    {
+        static const DwarfSection32 invalidSection;
+
+        for (auto& section : sections) { 
+            if (section.type == type) return section; 
+        }
+        return invalidSection;
+    }
+
+
+    DwarfSection64::DwarfSection64(const DwarfSection64& other) : type(other.type), size(other.size)
+    {
+        if (other.data.ownsData())
+        {
+            data.reset(new uint8_t[size], true); 
+            memcpy(this->data.get(), other.data.get(), size);
+        }
+        else data.reset(other.data.get(), false);
+    }
+
+    DwarfSection64& DwarfSection64::operator=(const DwarfSection64& other)
+    {
+        if (this == &other) return *this;
+
+        type = other.type; size = other.size;
+        data.reset(new uint8_t[size], true);
+        memcpy(this->data.get(), other.data.get(), size);
+
+        return *this;
+    }
+
+    const DwarfSection64& DwarfContext64::operator[](SectionType type) const
+    {
+        static const DwarfSection64 invalidSection;
+
+        for (auto& section : sections) {
+            if (section.type == type) return section;
+        }
+        return invalidSection;
+    }
+
+
     // Returns -1 upon error, will advance valueData ptr to start of value
     // 'dwarfWidth' should be 4 or 8
     std::size_t attributeSize(const dwarf4::AttributeSpecification& attr, 
@@ -168,7 +232,7 @@ namespace dwarf
     template<typename DwarfContext>
     static uint32_t nextDIE(const uint8_t* buffer, std::size_t length,
         const DwarfContext& context, uint64_t& abbrevID_out, 
-        dwarf4::DIEType& type_out, const char* name_out)
+        dwarf4::DIEType& type_out, const char*& name_out)
     {
         const uint8_t* origBuffer = buffer;
 
@@ -176,6 +240,7 @@ namespace dwarf
         bool hasChildren = false;
 
         auto& debug_abbrev = context[SectionType::debug_abbrev];
+        if (!debug_abbrev) return 0;
 
         // Read header
         buffer += dwarf::uleb_read(buffer, abbrevID_out);
@@ -208,7 +273,9 @@ namespace dwarf
                 attr.form == dwarf4::AttributeForm::None) break;
 
             // Get attribute size 
-            std::size_t size = attributeSize(attr, DwarfContext::bits/8, DwarfContext::bits/8, buffer);
+            std::size_t size = attributeSize(attr, context.header.addressSize, 
+                DwarfContext::bits/8, buffer);
+
             if (size == static_cast<std::size_t>(-1)) return static_cast<uint32_t>(-1);
 
             // Handle 'name' attribute
@@ -216,11 +283,18 @@ namespace dwarf
             {
                 if (attr.form == dwarf4::AttributeForm::String) {
                     name_out = reinterpret_cast<const char*>(buffer);
-                } else if (attr.form == dwarf4::AttributeForm::Strp) {
-
+                }
+                else if (attr.form == dwarf4::AttributeForm::Strp)
+                {
+                    auto& debug_str = context[SectionType::debug_str];
+                    if (debug_str)
+                    {
+                        uint64_t offset = 0;
+                        memcpy(&offset, buffer, size);
+                        name_out = reinterpret_cast<const char*>(debug_str.data.get() + offset);
+                    }
                 }
             }
-
             // Advance buffer past value
             buffer += size;
         }
@@ -229,10 +303,11 @@ namespace dwarf
     }
 
 
-    error_t DwarfContext64::buildIndexes()
+    template<typename DwarfContext>
+    static error_t _buildIndexes(DwarfContext& context)
     {
-        auto& debug_abbrev = (*this)[SectionType::debug_abbrev];
-        auto& debug_info = (*this)[SectionType::debug_info];
+        auto& debug_abbrev = context[SectionType::debug_abbrev];
+        auto& debug_info = context[SectionType::debug_info];
 
         // Index abbreviation table - this must be done first
         {
@@ -247,7 +322,7 @@ namespace dwarf
                 if (abbrevID == 0) break;
 
                 // Store ID<->offset in index
-                this->abbreviationIndex[abbrevID] = buffer - debug_abbrev.data.get();
+                context.abbreviationIndex[abbrevID] = buffer - debug_abbrev.data.get();
 
                 // Update buffer view
                 bufferSize -= size;
@@ -260,22 +335,36 @@ namespace dwarf
             const uint8_t* buffer = debug_info.data.get();
             uint32_t bufferSize = debug_info.size;
 
+            // Skip past program header
+            buffer += sizeof(context.header);
+            bufferSize -= sizeof(context.header);
+
             while (true)
             {
                 // Parse next DIE
                 uint64_t abbrevID; dwarf4::DIEType dietype; const char* name;
-                auto size = nextDIE(buffer, bufferSize, debug_abbrev, abbrevID, dietype, name);
+                auto size = nextDIE(buffer, bufferSize, context, abbrevID, dietype, name);
                 if (abbrevID == 0) break;
 
                 // Add DIE to index
-                entryIDIndex.emplace_back(dietype, abbrevID, name, buffer - debug_info.data.get());
+                context.entryIDIndex.emplace_back(
+                    dietype, abbrevID, name, buffer - debug_info.data.get());
 
                 // Update buffer view
                 bufferSize -= size;
                 buffer += size;
             }
         }
-
         return 0;
+    }
+
+
+    error_t DwarfContext32::buildIndexes()
+    {
+        return _buildIndexes(*this);
+    }
+    error_t DwarfContext64::buildIndexes()
+    {
+        return _buildIndexes(*this);
     }
 }
