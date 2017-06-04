@@ -17,12 +17,12 @@
 #include "platform.h"
 #include "glue.h"
 
-namespace dwarf4
+namespace dwarf
 {
 
     // .debug_info section header
     _pack_start
-    struct CompilationUnitHeader32
+        struct CompilationUnitHeader32
     {
         uint32_t unitLength;
         uint16_t version;
@@ -45,7 +45,7 @@ namespace dwarf4
 #pragma region .DEBUG_PUBNAMES/.DEBUG_PUBTYPES
 
     _pack_start
-    struct NameTableHeader32
+        struct NameTableHeader32
     {
     public:
         uint32_t unitLength;      // Length of the set of entries for this compilation unit, not including the 
@@ -57,7 +57,7 @@ namespace dwarf4
     } _pack_end;
 
     _pack_start
-    struct NameTableHeader64
+        struct NameTableHeader64
     {
         unsigned : 32;            // Should be 0xFFFFFFFF
         uint64_t unitLength;      // Length of the set of entries for this compilation unit, not including the 
@@ -73,7 +73,7 @@ namespace dwarf4
 
 #pragma region .DEBUG_ARRANGES
     _pack_start
-    struct AddressRangeTableHeader32
+        struct AddressRangeTableHeader32
     {
         uint32_t unitLength;      // Length of the set of entries for this compilation unit, not including the 
                                   // length field itself
@@ -82,10 +82,10 @@ namespace dwarf4
         uint8_t  addressSize;     // The size in bytes of an address (or the offset portion for segmented) on the target system
         uint8_t  segmentSize;     // The size in bytes of a segment selector on the target system
     } _pack_end;
-    
+
 
     _pack_start
-    struct AddressRangeTableHeader64
+        struct AddressRangeTableHeader64
     {
         unsigned : 32;            // Should be 0xFFFFFFFF
         uint64_t unitLength;      // Length of the set of entries for this compilation unit, not including the 
@@ -112,8 +112,9 @@ namespace dwarf4
     {
         uint32_t length;
         uint32_t ptrCIEntry;
-        
+
     };
+
 
     struct AttributeSpecification
     {
@@ -125,7 +126,6 @@ namespace dwarf4
         static uint32_t parse(const uint8_t* buffer, std::size_t length, AttributeSpecification& attr_out);
 
     };
-
 
 
     class DebugInfoAbbreviation
@@ -157,44 +157,36 @@ namespace dwarf4
 	};
 
 
-    struct AttributeValue
-    {
-
-    };
-
-
-    class DebugInfoEntry
+    class Attribute : public AttributeSpecification
     {
     public:
-        uint64_t index;
-        uint64_t abbreviationID;
-        size_t attributeCount;
-        std::unique_ptr<AttributeValue[]> attributes;
+        const uint8_t* data{};
+        std::size_t size{};
 
     public:
-        DebugInfoEntry() = default;
-        DebugInfoEntry(DebugInfoEntry&&) = default;
-        DebugInfoEntry& operator =(DebugInfoEntry&&) = default;
-    };
-
-
-    class Attribute
-    {
-    public:
-		AttributeSpecification &definition;
-		std::unique_ptr<uint8_t[]> valueData{};
-
-    public:
-        Attribute(AttributeSpecification &def, std::unique_ptr<uint8_t[]> data)
-            : definition(def), valueData(std::move(data)) { }
+        Attribute() = default;
+        inline Attribute(const AttributeSpecification& def, const uint8_t* data, std::size_t size)
+            : AttributeSpecification(def), data(data), size(size) { }
 
     public:
         template<class T, class=std::enable_if_t<std::is_trivially_copyable<T>::value>>
-        inline T valueAs() { 
-			T value; std::memcpy(&value, this->valueData.get(), sizeof(T));
-			return value;
-		}
-
+        inline T valueAs() {
+            T value; std::memcpy(&value, this->valueData.get(), sizeof(T));
+            return value;
+        }
     };
+
+
+
+    struct DebugInfoEntry
+    {
+        uint64_t id;
+        uint64_t abbreviationId;
+        DIEType type;
+        size_t attributeCount;
+        std::unique_ptr<Attribute[]> attributes;
+    };
+
+
 
 }

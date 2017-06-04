@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-namespace dwarf4
+namespace dwarf
 {
     // Tags
     enum class DIEType : uint16_t
@@ -167,6 +167,10 @@ namespace dwarf4
         Visibility         = 0x17, // Visibility of declaration
         VTableElemLocation = 0x4D  // Virtual function vtable slot
     };
+
+    const char* AttributeNameToString(AttributeName name);
+
+
 
     enum class AttributeForm
     {
@@ -432,3 +436,4 @@ namespace dwarf4
     };
 
 }
+

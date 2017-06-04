@@ -14,6 +14,7 @@
 #include <vector>
 #include <assert.h>
 #include <algorithm>
+#include <iostream>
 
 using namespace dwarf;
 using namespace dwarf2;
@@ -119,10 +120,13 @@ int main(int argc, const char** args)
         printf("| Symbol '%s' type %d |\n", str, symbolTables[0].entries[i].st_info_type);
     }
 
+    // ----------------------------------------------------------------------------------------
+    // THE DWARF BIT
+
 
     std::vector<DwarfSection32> sections{};
 
-    // Print section info
+    // Convert ELF sections to DWARF sections (& print)
     for (int i = 0; i < fileHeader.e_shnum; i++)
     {
         const char* name = strtables[0][sectionTable[i].sh_name];
@@ -139,8 +143,32 @@ int main(int argc, const char** args)
             sectionTable[i].sh_size);
     }
 
+    // Create context and index entries
     DwarfContext32 context(Array<DwarfSection32>(sections.data(), sections.size(), false));
     context.buildIndexes();
+
+
+    for (auto die : context.dieIndex)
+    {
+        if (die.type == DIEType::Subprogram)
+        {
+            std::cout << "SUBPROGRAM " << die.id << ", " << die.name << "\n";
+
+            auto entry = context.dieFromId(die.id);
+            for (std::size_t i = 0; i < entry.attributeCount; i++)
+            {
+                std::cout << "  [" << AttributeNameToString(entry.attributes[i].name) << "] " 
+                    << entry.attributes[i].size << "\n";
+            }
+
+            for (auto die2 : context.dieIndex)
+            {
+                if (die2.type == DIEType::FormalParameter && die2.parentId == die.id) {
+                    std::cout << "\t  " << die2.id << ", " << die2.name << "\n";
+                }
+            }
+        }
+    }
 
 
     DwarfSection32 debug_line;

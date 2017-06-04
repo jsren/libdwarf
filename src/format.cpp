@@ -6,7 +6,7 @@
 #include <vector>
 
 
-namespace dwarf4
+namespace dwarf
 {
     std::size_t readHeader(const uint8_t* buffer, std::size_t length, 
         uint64_t& id_out, uint32_t& type_out)
@@ -195,16 +195,50 @@ namespace dwarf4
 	}
 
 
-    /*uint32_t DebugInfoEntry::parse(const uint8_t* buffer, std::size_t length, 
-        DebugInfoEntry& entry_out, const DebugInfoAbbreviation& rootAbbreviation)
+    int32_t uleb_read(const uint8_t data[], uint32_t &value_out)
     {
-        const uint8_t* bufferStart = buffer;
+        // Perform manual unrolling
+        value_out = data[0];
+        if ((data[0] & 0b10000000) == 0) return 1;
+        else value_out &= 0b01111111;
 
-        uint64_t abbrevID;
-        buffer += dwarf::uleb_read(buffer, abbrevID);
+        value_out |= ((uint32_t)data[1] << 7);
+        if ((data[1] & 0b10000000) == 0) return 2;
+        else value_out &= ((0b01111111 << 7) | 0xFF);
 
+        value_out |= ((uint32_t)data[2] << 14);
+        if ((data[2] & 0b10000000) == 0) return 3;
+        else value_out &= ((0b01111111 << 14) | 0xFFFF);
 
+        value_out |= ((uint32_t)data[3] << 21);
+        if ((data[3] & 0b10000000) == 0) return 4;
+        else value_out &= ((0b01111111 << 21) | 0xFFFFFF);
 
-    }*/
+        value_out |= ((uint32_t)data[4] << 28);
+        if ((data[4] & 0b10000000) == 0) return 5;
+
+        // Consume any extra bytes
+        for (int i = sizeof(value_out) + 1; true; i++) {
+            if ((data[i] & 0b10000000) == 0) return i + 1;
+        }
+        return 0; // This should never happen...
+    }
+
+    int32_t uleb_read(const uint8_t data[], /*out*/ uint64_t &value_out)
+    {
+        int32_t i = 0;
+        value_out = 0; // Zero 
+        
+        for (uint8_t shift = 0; i <= (uint8_t)sizeof(value_out); shift += 7, i++)
+        {
+            value_out |= ((uint64_t)data[i] << shift);
+            if ((data[i] & 0b10000000) == 0) return i + 1;
+            else value_out &= ~((uint64_t)(0b10000000 << shift));
+        }
+
+        // Consume any extra bytes
+        while (data[i++] & 0b10000000) { }
+        return i;
+    }
 
 }
