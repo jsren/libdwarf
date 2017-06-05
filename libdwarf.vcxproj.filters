@@ -7,6 +7,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="lines.cpp" />
     <ClCompile Include="src\const.cpp" />
+    <ClCompile Include="src\expression.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\const.h" />

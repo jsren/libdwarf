@@ -162,6 +162,7 @@
     <ClCompile Include="src\const.cpp" />
     <ClCompile Include="src\dwarf.cpp" />
     <ClCompile Include="src\elf.cpp" />
+    <ClCompile Include="src\expression.cpp" />
     <ClCompile Include="src\format.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>

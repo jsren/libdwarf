@@ -195,7 +195,7 @@ namespace dwarf
 	}
 
 
-    int32_t uleb_read(const uint8_t data[], uint32_t &value_out)
+    uint32_t uleb_read(const uint8_t data[], uint32_t &value_out)
     {
         // Perform manual unrolling
         value_out = data[0];
@@ -224,7 +224,7 @@ namespace dwarf
         return 0; // This should never happen...
     }
 
-    int32_t uleb_read(const uint8_t data[], /*out*/ uint64_t &value_out)
+    uint32_t uleb_read(const uint8_t data[], /*out*/ uint64_t &value_out)
     {
         int32_t i = 0;
         value_out = 0; // Zero 
@@ -240,5 +240,17 @@ namespace dwarf
         while (data[i++] & 0b10000000) { }
         return i;
     }
+
+
+    uint32_t sleb_read(const uint8_t data[], int32_t& value_out)
+    {
+
+    }
+
+    uint32_t sleb_read(const uint8_t data[], /*out*/ int64_t& value_out)
+    {
+
+    }
+
 
 }

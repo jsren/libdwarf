@@ -13,8 +13,11 @@ namespace dwarf
 {
     typedef signed long int error_t;
 
-    int32_t uleb_read(const uint8_t data[], uint32_t &value_out);
-    int32_t uleb_read(const uint8_t data[], uint64_t &value_out);
+    uint32_t uleb_read(const uint8_t data[], uint32_t &value_out);
+    uint32_t uleb_read(const uint8_t data[], uint64_t &value_out);
+
+    uint32_t sleb_read(const uint8_t data[], int32_t &value_out);
+    uint32_t sleb_read(const uint8_t data[], int64_t &value_out);
 
     enum class SectionType : uint8_t
     {
