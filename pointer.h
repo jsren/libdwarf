@@ -123,7 +123,7 @@ namespace elf
             if (!hasOwnership) 
 				this->release();
             // Manual destructor call as destructor is not virtual
-            std::unique_ptr<T[]>::~unique_ptr<T[]>();
+            //std::unique_ptr<T[]>::~unique_ptr<T[]>();
         }
 
         inline Pointer& operator=(Pointer&& r)

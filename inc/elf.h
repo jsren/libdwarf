@@ -2,7 +2,6 @@
 #pragma once
 
 #include "platform.h"
-#include "glue.h"
 #include "../pointer.h"
 
 #include <stdint.h>

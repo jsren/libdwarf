@@ -15,7 +15,6 @@
 
 #include "const.h"
 #include "platform.h"
-#include "glue.h"
 
 namespace dwarf
 {

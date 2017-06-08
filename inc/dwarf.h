@@ -2,7 +2,7 @@
 #pragma once
 #include <cstddef>
 #include <stdint.h>
-#include <cstring>
+#include <string.h>
 #include <memory>
 #include <unordered_map>
 #include "const.h"
@@ -13,11 +13,22 @@ namespace dwarf
 {
     typedef signed long int error_t;
 
-    uint32_t uleb_read(const uint8_t data[], uint32_t &value_out);
-    uint32_t uleb_read(const uint8_t data[], uint64_t &value_out);
 
-    uint32_t sleb_read(const uint8_t data[], int32_t &value_out);
-    uint32_t sleb_read(const uint8_t data[], int64_t &value_out);
+	/* Reads an unsigned LEB value from the given buffer of the specified length. 
+	   Returns the number of bytes read. */
+	uint32_t uleb_read(const uint8_t data[], std::size_t length, uint32_t &value_out);
+	/* Reads an unsigned LEB value from the given buffer of the specified length.
+	   Returns the number of bytes read. */
+    uint32_t uleb_read(const uint8_t data[], std::size_t length, uint64_t &value_out);
+
+	/* Reads a signed LEB value from the given buffer of the specified length.
+	   Returns the number of bytes read. */
+    uint32_t sleb_read(const uint8_t data[], std::size_t length, int32_t &value_out);
+	/* Reads a signed LEB value from the given buffer of the specified length.
+	   Returns the number of bytes read. */
+    uint32_t sleb_read(const uint8_t data[], std::size_t length, int64_t &value_out);
+
+
 
     enum class SectionType : uint8_t
     {

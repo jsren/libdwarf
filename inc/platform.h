@@ -1,6 +1,7 @@
 /* platform.h - (c) James S Renwick 2016 */
 #pragma once
 
+
 #ifdef _MSC_VER
 
 #define _pack_start __pragma(pack(push, 1))

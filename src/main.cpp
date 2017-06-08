@@ -195,7 +195,7 @@ int main(int argc, const char** args)
     }
 
     // Delete buffer
-    delete[] buffer;
+    //delete[] buffer;
 
     return 0;
 }

@@ -1,44 +1,22 @@
 #pragma once
-#include <stdint.h>
+#include "platform.h"
 
-namespace dwarf
+namespace glue
 {
-    namespace glue
+    template<class T>
+    class IList
     {
-        void printf(const char *string);
+    public:
+        virtual void add(T item) = 0;
+		
+        virtual size_t count() const = 0;
 
-        template <typename ...Args>
-        void printf(const char *format, Args... items);
+        virtual T& operator[](size_t index) = 0;
 
-        enum class SeekMode
-        {
-            Absolute,
-            Relative
-        };
+		virtual const T& operator[](size_t index) = 0;
 
-
-        template<class T>
-        class IList
-        {
-        public:
-            virtual void add(T item) = 0;
-            virtual size_t count() = 0;
-
-            virtual T *toArray() = 0;
-            virtual T &operator [](size_t index) = 0;
-        };
-
-
-
-        class IFile
-        {
-        public:
-            virtual size_t getPosition() = 0;
-            virtual int seek(size_t offset) {
-                return this->seek(offset, SeekMode::Absolute);
-            }
-            virtual int seek(size_t offset, SeekMode mode) = 0;
-            virtual size_t read(void *buffer, size_t length) = 0;
-        };
-    }
+		static IList newInstance(size_t sizeHint);
+	};
 }
+
+#include <glue-impl.h>

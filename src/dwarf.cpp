@@ -67,8 +67,8 @@ namespace dwarf
 
     // Returns -1 upon error, will advance valueData ptr to start of value
     // 'addressSize', 'dwarfWidth' should be 4 or 8
-    std::size_t attributeSize(const AttributeSpecification& attr, 
-        std::size_t addressSize, uint8_t dwarfWidth, const uint8_t*& value)
+	std::size_t attributeSize(const AttributeSpecification& attr, std::size_t addressSize, 
+		uint8_t dwarfWidth, const uint8_t*& value, std::size_t valueLength)
     {
         switch (attr.form) {
             // AttributeClass::Address
@@ -77,17 +77,17 @@ namespace dwarf
             case AttributeForm::Block1: return *(value++);
             case AttributeForm::Block2: { uint16_t size; memcpy(&size, value, 2); value += 2; return size; }
             case AttributeForm::Block4: { uint32_t size; memcpy(&size, value, 4); value += 4; return size; }
-            case AttributeForm::Block:  { uint64_t size; value += uleb_read(value, size); return size; }
+            case AttributeForm::Block:  { uint64_t size; value += uleb_read(value, valueLength, size); return size; }
             // AttributeClass::Constant
             case AttributeForm::Data1: return 1;
             case AttributeForm::Data2: return 2;
             case AttributeForm::Data4: return 4;
             case AttributeForm::Data8: return 8;
-            case AttributeForm::SData: { uint64_t _; return uleb_read(value, _); }
-            case AttributeForm::UData: { uint64_t _; return uleb_read(value, _); }
+            case AttributeForm::SData: { uint64_t _; return uleb_read(value, valueLength, _); }
+            case AttributeForm::UData: { uint64_t _; return uleb_read(value, valueLength, _); }
             // AttributeClass::ExprLoc
             case AttributeForm::ExprLoc:
-                { uint64_t size; value += uleb_read(value, size); return size; }
+                { uint64_t size; value += uleb_read(value, valueLength, size); return size; }
             // AttributeClass::Flag
             case AttributeForm::Flag: return 1;
             case AttributeForm::FlagPresent: return 0;
@@ -98,7 +98,7 @@ namespace dwarf
             case AttributeForm::Ref2: return 2;
             case AttributeForm::Ref4: return 4;
             case AttributeForm::Ref8: return 8;
-            case AttributeForm::RefUData: { uint64_t _; return uleb_read(value, _); }
+            case AttributeForm::RefUData: { uint64_t _; return uleb_read(value, valueLength, _); }
             case AttributeForm::RefSig8: return 8; 
             // AttributeClass::Reference
             case AttributeForm::RefAddr: return dwarfWidth;
@@ -109,6 +109,10 @@ namespace dwarf
         // Indicate error - unknown form
         return static_cast<std::size_t>(-1);
     }
+
+	
+	extern std::size_t readHeader(const uint8_t* buffer, std::size_t length,
+		uint64_t& id_out, uint32_t& type_out);
 
 
     static class DebugEntryParser
@@ -123,23 +127,23 @@ namespace dwarf
             bool hasChildren = false;
 
             // Read header
-            buffer += dwarf::uleb_read(buffer, abbrevID_out);
-            if (abbrevID_out != 0) {
-                buffer += dwarf::uleb_read(buffer, tag);
-            }
+			auto size = readHeader(buffer, length, abbrevID_out, tag);
+			buffer += size; length -= size;
+
             // Terminate if null entry
-            else return buffer - origBuffer;
+            if (abbrevID_out == 0) return buffer - origBuffer;
 
             // Skip over 'hasChildren'
-            buffer++;
+			buffer++; length--;
 
             // Skip attributes
             while (true)
             {
-                uint32_t name, form;
-                buffer += dwarf::uleb_read(buffer, name);
-                buffer += dwarf::uleb_read(buffer, form);
-                if (name == 0 && form == 0) break;
+				AttributeSpecification _;
+				auto size = AttributeSpecification::parse(buffer, length, _);
+
+				buffer += size; length -= size;
+                if (_.name == AttributeName::None && _.form == AttributeForm::None) break;
             }
             return buffer - origBuffer;
         }
@@ -151,27 +155,27 @@ namespace dwarf
         {
             const uint8_t* origBuffer = buffer;
 
-            uint32_t tag = 0;
             hasChildren_out = false;
             name_out = nullptr;
+			type_out = DIEType::None;
 
             auto& debug_abbrev = context[SectionType::debug_abbrev];
             if (!debug_abbrev) return 0;
 
             // Read header
-            buffer += dwarf::uleb_read(buffer, abbrevID_out);
+            auto size = dwarf::uleb_read(buffer, length, abbrevID_out);
+			buffer += size; length -= size;
             // Terminate if null entry
             if (abbrevID_out == 0) return buffer - origBuffer;
 
             // Get abbreviation data from index
             auto index = context.abbreviationIndex.at(abbrevID_out);
-            const uint8_t* origAbbrevData = debug_abbrev.data.get() + index;
-            const uint8_t* abbrevData = origAbbrevData;
+            const uint8_t* origAbbrevData = debug_abbrev.data.get();
+            const uint8_t* abbrevData = origAbbrevData + index;
 
             // Read abbreviation header
-            uint64_t _;
-            abbrevData += dwarf::uleb_read(abbrevData, _);
-            abbrevData += dwarf::uleb_read(abbrevData, tag);
+			uint64_t _; uint32_t tag;
+			abbrevData += readHeader(abbrevData, debug_abbrev.size - (abbrevData - origAbbrevData), _, tag);
             type_out = static_cast<DIEType>(tag);
 
             hasChildren_out = abbrevData[0];
@@ -190,8 +194,8 @@ namespace dwarf
                     attr.form == AttributeForm::None) break;
 
                 // Get attribute size 
-                std::size_t size = attributeSize(attr, context.unitHeader().addressSize(),
-					context.width == DwarfWidth::Bits64 ? 8 : 4, buffer);
+                auto size = attributeSize(attr, context.unitHeader().addressSize(),
+					context.width == DwarfWidth::Bits64 ? 8 : 4, buffer, length);
 
                 if (size == static_cast<std::size_t>(-1)) return static_cast<uint32_t>(-1);
 
@@ -296,6 +300,7 @@ namespace dwarf
             return 0;
         }
 
+
         static DebugInfoEntry dieFromId(uint64_t id, DwarfContext& context)
         {
             auto& index = context.entryIndex[id];
@@ -314,26 +319,33 @@ namespace dwarf
 
             // Parse abbreviation no.
             uint64_t abbrevId;
-            buffer += uleb_read(buffer, abbrevId);
+            auto size = uleb_read(buffer, length, abbrevId);
+			buffer += size; length -= size;
         
             // Get offset into abbreviation table
-            abbrevData += context.abbreviationIndex[abbrevId];
+            auto abbrev_offset = context.abbreviationIndex[abbrevId];
+			auto abbrevLength = debug_abbrev.size - abbrev_offset;
+			abbrevData += abbrev_offset;
 
             // Skip abbreviation header
-            uint64_t _;
-            abbrevData += dwarf::uleb_read(abbrevData, _);
-            abbrevData += dwarf::uleb_read(abbrevData, _);
+			uint64_t _; uint32_t _1;
+			size = readHeader(abbrevData, abbrevLength, _, _1);
+			abbrevData += size; abbrevLength -= size;
             abbrevData++;
 
             // Count attributes
             uint32_t attrCount = 0;
             const uint8_t* tmpBuff = abbrevData;
+			auto tmpLength = abbrevLength;
             while (true)
             {
                 uint32_t name, form;
 
-                tmpBuff += dwarf::uleb_read(tmpBuff, name);
-                tmpBuff += dwarf::uleb_read(tmpBuff, form);
+				auto size = dwarf::uleb_read(tmpBuff, tmpLength, name);
+				tmpBuff += size; tmpLength -= size;
+
+                size = dwarf::uleb_read(tmpBuff, tmpLength, form);
+				tmpBuff += size; tmpLength -= size;
 
                 if (name == 0 && form == 0) break;
                 else attrCount++;
@@ -362,11 +374,10 @@ namespace dwarf
 
                 // Get attribute size 
                 std::size_t size = attributeSize(attr, context.unitHeader().addressSize(),
-                    context.width == DwarfWidth::Bits64 ? 8 : 4, buffer);
+                    context.width == DwarfWidth::Bits64 ? 8 : 4, buffer, length);
 
                 // If invalid size, return early
-                if (size == static_cast<std::size_t>(-1)) 
-                    return DebugInfoEntry();
+                if (size == static_cast<std::size_t>(-1)) return DebugInfoEntry();
 
                 // Store attribute definition
                 entry.attributes[attrIndex++] = Attribute(attr, buffer, size);

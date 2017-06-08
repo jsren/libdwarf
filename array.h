@@ -97,7 +97,7 @@ namespace dwarf
 
             using iterator_category = std::input_iterator_tag;
             using value_type        = T;
-            using difference_type   = std::nullptr_t;
+            using difference_type   = decltype(nullptr);
             using pointer           = T*;
             using reference         = T&;
         };
