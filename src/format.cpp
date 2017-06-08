@@ -244,12 +244,12 @@ namespace dwarf
 
     uint32_t sleb_read(const uint8_t data[], int32_t& value_out)
     {
-
+		throw "NotImplemented";
     }
 
     uint32_t sleb_read(const uint8_t data[], /*out*/ int64_t& value_out)
     {
-
+		throw "NotImplemented";
     }
 
 

@@ -451,7 +451,7 @@ namespace dwarf
         Reg27      = 0x6B,
         Reg28      = 0x6C,
         Reg29      = 0x6D,
-        Reg20      = 0x6E,
+        Reg30      = 0x6E,
         Reg31      = 0x6F,
 
         RegX       = 0x90,

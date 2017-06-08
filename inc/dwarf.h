@@ -34,49 +34,26 @@ namespace dwarf
     SectionType SectionTypeFromString(const char* str);
 
 
-    struct DwarfSection32
-    {
-        SectionType type = SectionType::invalid;
-        elf::Pointer<uint8_t[]> data{};
-        uint32_t size{};
 
-    public:
-        DwarfSection32() = default;
-
-        inline DwarfSection32(SectionType type, elf::Pointer<uint8_t[]> data, uint32_t size)
-            : type(type), data(std::move(data)), size(size) { }
-
-        explicit DwarfSection32(const DwarfSection32& other);
-        DwarfSection32& operator=(const DwarfSection32& other);
-
-        inline operator bool() const {
-            return type != SectionType::invalid;
-        }
-    };
-
-
-    struct DwarfSection64
+    struct DwarfSection
     {
         SectionType type = SectionType::invalid;
         elf::Pointer<uint8_t[]> data{};
         uint64_t size{};
 
     public:
-        DwarfSection64() = default;
+        DwarfSection() = default;
 
-        inline DwarfSection64(SectionType type, elf::Pointer<uint8_t[]> data, uint64_t size) noexcept
+        inline DwarfSection(SectionType type, elf::Pointer<uint8_t[]> data, uint64_t size) noexcept
             : type(type), data(std::move(data)), size(size) { }
 
-        explicit DwarfSection64(const DwarfSection64& other);
-        DwarfSection64& operator=(const DwarfSection64& other);
+        explicit DwarfSection(const DwarfSection& other);
+        DwarfSection& operator=(const DwarfSection& other);
 
         inline operator bool() const {
             return type != SectionType::invalid;
         }
     };
-
-
-
 
 
 
@@ -116,8 +93,8 @@ namespace dwarf
     template<typename BeginIter, typename EndIter>
     struct DieIndexIteratorProxy
     {
-        friend class DwarfContext32;
-        friend class DwarfContext64;
+        friend class DwarfContext;
+        friend class DwarfContext;
 
     private:
         BeginIter _begin;
@@ -133,35 +110,36 @@ namespace dwarf
     };
 
 
+	enum class DwarfWidth
+	{
+		Bits32,
+		Bits64
+	};
 
-    class DwarfContext32
+
+
+    class DwarfContext
     {
         friend class DebugEntryParser;
 
-    public:
-        static constexpr const uint8_t bits = 32;
 
     private:
-        CompilationUnitHeader32 header{};
+        std::unique_ptr<CompilationUnitHeader> header{};
 
         using EntryIndex = std::tuple<DIEType, uint64_t, const char*, std::size_t>;
         std::unordered_map<uint64_t, std::size_t> abbreviationIndex{};
         std::vector<EntryIndex> entryIndex{};
 
     public:
-        const Array<DwarfSection32> sections{0};
+        const Array<DwarfSection> sections{0};
+
+		const DwarfWidth width{};
 
         DieIndexIteratorProxy<decltype(entryIndex.cbegin()),
             decltype(entryIndex.cend())> dieIndex{};
 
     public:
-        inline explicit DwarfContext32(Array<DwarfSection32>&& sections) : 
-            sections(std::move(sections))
-        {
-            for (auto& section : this->sections) if (section.type == SectionType::debug_info) {
-                memcpy(&header, section.data.get(), sizeof(header)); break;
-            }
-        }
+		explicit DwarfContext(Array<DwarfSection>&& sections, DwarfWidth width);
 
     public:
 
@@ -169,60 +147,11 @@ namespace dwarf
 
         DebugInfoEntry dieFromId(uint64_t id);
 
-        const DwarfSection32& operator[](SectionType type) const;
+        const DwarfSection& operator[](SectionType type) const;
 
 
         inline const auto& unitHeader() const {
-            return header;
-        }
-    };
-
-
-    class DwarfContext64
-    {
-        friend class DebugEntryParser;
-
-    public:
-        static constexpr const uint8_t bits = 64;
-
-    private:
-        CompilationUnitHeader32 header;
-
-        using EntryIndex = std::tuple<DIEType, uint64_t, const char*, std::size_t>;
-        std::unordered_map<uint64_t, std::size_t> abbreviationIndex{};
-        std::vector<EntryIndex> entryIndex{};
-
-
-    public:
-        const Array<DwarfSection64> sections{0};
-
-        DieIndexIteratorProxy<decltype(entryIndex.cbegin()),
-            decltype(entryIndex.cend())> dieIndex{};
-
-    public:
-        inline explicit DwarfContext64(Array<DwarfSection64>&& sections)
-            : sections(std::move(sections))
-        { 
-            for (auto& section : this->sections) if (section.type == SectionType::debug_info) {
-                memcpy(&header, section.data.get(), sizeof(header)); break;
-            }
-        }
-
-    public:
-
-        error_t buildIndexes();
-
-        DebugInfoEntry dieFromId(uint64_t id);
-
-        const DwarfSection64& operator[](SectionType type) const;
-
-
-        inline const auto& dieByID(uint64_t dieID) const {
-            return entryIndex[dieID];
-        }
-
-        inline const auto& unitHeader() const {
-            return header;
+            return *header.get();
         }
     };
 

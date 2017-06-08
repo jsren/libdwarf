@@ -31,7 +31,7 @@ namespace dwarf
 
 
 
-    DwarfSection32::DwarfSection32(const DwarfSection32& other) : type(other.type), size(other.size)
+    DwarfSection::DwarfSection(const DwarfSection& other) : type(other.type), size(other.size)
     {
         if (other.data.ownsData())
         {
@@ -41,7 +41,7 @@ namespace dwarf
         else data.reset(other.data.get(), false);
     }
 
-    DwarfSection32& DwarfSection32::operator=(const DwarfSection32& other)
+    DwarfSection& DwarfSection::operator=(const DwarfSection& other)
     {
         if (this == &other) return *this;
 
@@ -52,9 +52,9 @@ namespace dwarf
         return *this;
     }
 
-    const DwarfSection32& DwarfContext32::operator[](SectionType type) const
+    const DwarfSection& DwarfContext::operator[](SectionType type) const
     {
-        static const DwarfSection32 invalidSection;
+        static const DwarfSection invalidSection;
 
         for (auto& section : sections) { 
             if (section.type == type) return section; 
@@ -63,36 +63,6 @@ namespace dwarf
     }
 
 
-    DwarfSection64::DwarfSection64(const DwarfSection64& other) : type(other.type), size(other.size)
-    {
-        if (other.data.ownsData())
-        {
-            data.reset(new uint8_t[size], true); 
-            memcpy(this->data.get(), other.data.get(), size);
-        }
-        else data.reset(other.data.get(), false);
-    }
-
-    DwarfSection64& DwarfSection64::operator=(const DwarfSection64& other)
-    {
-        if (this == &other) return *this;
-
-        type = other.type; size = other.size;
-        data.reset(new uint8_t[size], true);
-        memcpy(this->data.get(), other.data.get(), size);
-
-        return *this;
-    }
-
-    const DwarfSection64& DwarfContext64::operator[](SectionType type) const
-    {
-        static const DwarfSection64 invalidSection;
-
-        for (auto& section : sections) {
-            if (section.type == type) return section;
-        }
-        return invalidSection;
-    }
 
 
     // Returns -1 upon error, will advance valueData ptr to start of value
@@ -175,7 +145,6 @@ namespace dwarf
         }
 
 
-        template<typename DwarfContext>
         static uint32_t nextDIE(const uint8_t* buffer, std::size_t length,
             const DwarfContext& context, uint64_t& abbrevID_out, 
             DIEType& type_out, const char*& name_out, bool& hasChildren_out)
@@ -221,8 +190,8 @@ namespace dwarf
                     attr.form == AttributeForm::None) break;
 
                 // Get attribute size 
-                std::size_t size = attributeSize(attr, context.unitHeader().addressSize,
-                    DwarfContext::bits/8, buffer);
+                std::size_t size = attributeSize(attr, context.unitHeader().addressSize(),
+					context.width == DwarfWidth::Bits64 ? 8 : 4, buffer);
 
                 if (size == static_cast<std::size_t>(-1)) return static_cast<uint32_t>(-1);
 
@@ -251,8 +220,6 @@ namespace dwarf
         }
 
 
-
-        template<typename DwarfContext>
         static std::size_t parseDIEChain(const uint8_t* buffer, std::size_t bufferSize, 
             DwarfContext& context, const uint8_t* sectionStart, uint64_t parentDIE)
         {
@@ -287,7 +254,6 @@ namespace dwarf
         }
 
 
-        template<typename DwarfContext>
         static error_t buildIndexes(DwarfContext& context)
         {
             auto& debug_abbrev = context[SectionType::debug_abbrev];
@@ -320,15 +286,16 @@ namespace dwarf
                 uint32_t bufferSize = debug_info.size;
 
                 // Skip past program header
-                buffer += sizeof(context.header);
-                bufferSize -= sizeof(context.header);
+				auto headerSize = context.width == DwarfWidth::Bits64 ? 
+					sizeof(CompilationUnitHeader64) : sizeof(CompilationUnitHeader32);
+
+                buffer += headerSize; bufferSize -= headerSize;
 
                 parseDIEChain(buffer, bufferSize, context, debug_info.data.get(), 0);
             }
             return 0;
         }
 
-        template<typename DwarfContext>
         static DebugInfoEntry dieFromId(uint64_t id, DwarfContext& context)
         {
             auto& index = context.entryIndex[id];
@@ -394,8 +361,8 @@ namespace dwarf
                     attr.form == AttributeForm::None) break;
 
                 // Get attribute size 
-                std::size_t size = attributeSize(attr, context.unitHeader().addressSize,
-                    DwarfContext::bits / 8, buffer);
+                std::size_t size = attributeSize(attr, context.unitHeader().addressSize(),
+                    context.width == DwarfWidth::Bits64 ? 8 : 4, buffer);
 
                 // If invalid size, return early
                 if (size == static_cast<std::size_t>(-1)) 
@@ -411,7 +378,28 @@ namespace dwarf
         }
     };
 
-    error_t DwarfContext32::buildIndexes()
+
+
+	DwarfContext::DwarfContext(Array<DwarfSection>&& sections, DwarfWidth width) :
+		sections(std::move(sections)), width(width)
+	{
+		// Copy compilation unit header from debug_info section, if found
+		for (auto& section : this->sections) if (section.type == SectionType::debug_info)
+		{
+			if (width == DwarfWidth::Bits32) {
+				CompilationUnitHeader32 header; memcpy(&header, section.data.get(), sizeof(header));
+				this->header.reset(new _detail::CompilationUnitHeader32(header));
+			}
+			else {
+				CompilationUnitHeader64 header; memcpy(&header, section.data.get(), sizeof(header));
+				this->header.reset(new _detail::CompilationUnitHeader64(header));
+			}
+			break;
+		}
+	}
+
+
+    error_t DwarfContext::buildIndexes()
     {
         auto res = DebugEntryParser::buildIndexes(*this);
         dieIndex._begin = entryIndex.cbegin();
@@ -419,24 +407,10 @@ namespace dwarf
         return res;
     }
 
-    DebugInfoEntry DwarfContext32::dieFromId(uint64_t id)
+
+    DebugInfoEntry DwarfContext::dieFromId(uint64_t id)
     {
         return DebugEntryParser::dieFromId(id, *this);
     }
-
-
-    error_t DwarfContext64::buildIndexes()
-    {
-        auto res = DebugEntryParser::buildIndexes(*this);
-        dieIndex._begin = entryIndex.cbegin();
-        dieIndex._end = entryIndex.cend();
-        return res;
-    }
-
-    DebugInfoEntry DwarfContext64::dieFromId(uint64_t id)
-    {
-        return DebugEntryParser::dieFromId(id, *this);
-    }
-
 
 }

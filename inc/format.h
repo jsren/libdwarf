@@ -22,13 +22,64 @@ namespace dwarf
 
     // .debug_info section header
     _pack_start
-        struct CompilationUnitHeader32
+    struct CompilationUnitHeader32
     {
         uint32_t unitLength;
         uint16_t version;
         uint32_t debugAbbrevOffset;
         uint8_t  addressSize;
     } _pack_end;
+
+	// .debug_info section header
+	_pack_start
+	struct CompilationUnitHeader64
+	{
+		uint32_t : 32;
+		uint64_t unitLength;
+		uint16_t version;
+		uint64_t debugAbbrevOffset;
+		uint8_t  addressSize;
+	} _pack_end;
+
+	struct CompilationUnitHeader
+	{
+		virtual uint64_t unitLength() const = 0;
+		virtual uint16_t version() const = 0;
+		virtual uint64_t debugAbbrevOffset() const = 0;
+		virtual uint8_t addressSize() const = 0;
+	};
+
+	namespace _detail
+	{
+		template<typename HeaderType>
+		struct CompilationUnitHeaderImpl : public CompilationUnitHeader
+		{
+		private:
+			HeaderType header;
+
+		public:
+			inline explicit CompilationUnitHeaderImpl(HeaderType header)
+				: header(header) { };
+
+			inline uint64_t unitLength() const override final {
+				return header.unitLength;
+			};
+			inline uint16_t version() const override final {
+				return header.version;
+			}
+			inline uint64_t debugAbbrevOffset() const override final {
+				return header.debugAbbrevOffset;
+			}
+			inline uint8_t addressSize() const override final {
+				return header.addressSize;
+			}
+		};
+		using CompilationUnitHeader32 = 
+			CompilationUnitHeaderImpl<dwarf::CompilationUnitHeader32>;
+		using CompilationUnitHeader64 =
+			CompilationUnitHeaderImpl<dwarf::CompilationUnitHeader64>;
+	}
+
 
     // .debug_types section header
     _pack_start struct TypeUnitHeader32

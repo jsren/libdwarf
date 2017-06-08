@@ -44,6 +44,9 @@ int main(int argc, const char** args)
     volatile size_t len = fread(buffer, 1, 53296, file);
     assert(len == 53296);
 
+	// Close file
+	fclose(file);
+
     // Attempt to parse ELF header
     volatile auto error = elf::parseElfHeader(buffer, len, fileHeader);
     assert(error == sizeof(elf::Header32));
@@ -124,7 +127,7 @@ int main(int argc, const char** args)
     // THE DWARF BIT
 
 
-    std::vector<DwarfSection32> sections{};
+    std::vector<DwarfSection> sections{};
 
     // Convert ELF sections to DWARF sections (& print)
     for (int i = 0; i < fileHeader.e_shnum; i++)
@@ -144,7 +147,7 @@ int main(int argc, const char** args)
     }
 
     // Create context and index entries
-    DwarfContext32 context(Array<DwarfSection32>(sections.data(), sections.size(), false));
+    DwarfContext context(Array<DwarfSection>(sections.data(), sections.size(), false), DwarfWidth::Bits32);
     context.buildIndexes();
 
 
@@ -171,7 +174,7 @@ int main(int argc, const char** args)
     }
 
 
-    DwarfSection32 debug_line;
+    DwarfSection debug_line;
     if ((debug_line = context[SectionType::debug_line]))
     {
         // Parse header

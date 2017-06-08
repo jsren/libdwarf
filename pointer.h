@@ -120,7 +120,8 @@ namespace elf
 
         inline ~Pointer()
         {
-            if (!hasOwnership) this->release();
+            if (!hasOwnership) 
+				this->release();
             // Manual destructor call as destructor is not virtual
             std::unique_ptr<T[]>::~unique_ptr<T[]>();
         }

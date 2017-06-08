@@ -8,9 +8,11 @@ namespace dwarf
     class ExpressionParser
     {
     private:
-        std::vector<int64_t> stack;
+		std::vector<int64_t> stack;
+		std::vector<uint8_t*> ipstack;
 
-        std::size_t addressSize;
+		std::size_t addressSize;
+		std::size_t dwarfWidth;
 
         int64_t(*readRegister)(uint64_t);
         int64_t(*getFrameBase)();
@@ -36,8 +38,8 @@ namespace dwarf
         }
 
 
-    public:
-        std::size_t execute(OpCode code, const uint8_t* operands, std::size_t length)
+    private:
+        int64_t runNext(OpCode code, const uint8_t* operands, std::size_t length)
         {
             auto intcode = static_cast<uint32_t>(code);
 
@@ -226,6 +228,64 @@ namespace dwarf
                 auto i2 = static_cast<int64_t>(stack.front()); stack_pop();
                 stack_push(i2 / (1 << i1));
             }
+			else if (code == OpCode::Xor) {
+				auto i1 = static_cast<uint64_t>(stack.front()); stack_pop();
+				auto i2 = static_cast<uint64_t>(stack.front()); stack_pop();
+				stack_push(i2 ^ i1);
+			}
+			// Handle signed comparisons
+			else if (code == OpCode::Le) {
+				auto i1 = static_cast<int64_t>(stack.front()); stack_pop();
+				auto i2 = static_cast<int64_t>(stack.front()); stack_pop();
+				stack_push(i2 <= i1 ? 1 : 0);
+			}
+			else if (code == OpCode::Ge) {
+				auto i1 = static_cast<int64_t>(stack.front()); stack_pop();
+				auto i2 = static_cast<int64_t>(stack.front()); stack_pop();
+				stack_push(i2 >= i1 ? 1 : 0);
+			}
+			else if (code == OpCode::Eq) {
+				auto i1 = static_cast<int64_t>(stack.front()); stack_pop();
+				auto i2 = static_cast<int64_t>(stack.front()); stack_pop();
+				stack_push(i2 == i1 ? 1 : 0);
+			}
+			else if (code == OpCode::Lt) {
+				auto i1 = static_cast<int64_t>(stack.front()); stack_pop();
+				auto i2 = static_cast<int64_t>(stack.front()); stack_pop();
+				stack_push(i2 < i1 ? 1 : 0);
+			}
+			else if (code == OpCode::Gt) {
+				auto i1 = static_cast<int64_t>(stack.front()); stack_pop();
+				auto i2 = static_cast<int64_t>(stack.front()); stack_pop();
+				stack_push(i2 > i1 ? 1 : 0);
+			}
+			else if (code == OpCode::Ne) {
+				auto i1 = static_cast<int64_t>(stack.front()); stack_pop();
+				auto i2 = static_cast<int64_t>(stack.front()); stack_pop();
+				stack_push(i2 != i1 ? 1 : 0);
+			}
+			// Handle control flow operations
+			else if (code == OpCode::Skip)
+			{
+				int16_t offset; memcpy(&offset, operands, 2);
+				return 2 + offset;
+			}
+			else if (code == OpCode::Bra)
+			{
+				int16_t offset = 0;
+				auto i1 = static_cast<int64_t>(stack.front()); stack_pop();
+
+				if (i1) { memcpy(&offset, operands, 2); }
+				return 2 + offset;
+			}
+			else if (code == OpCode::Call2)
+			{
+				//ipstack.push_back()
+			}
+
+			// Handle NOP
+			else if (code == OpCode::Nop) { }
+
             return 0;
         }
 
