@@ -1,4 +1,4 @@
-#include "const.h"
+#include "const.hpp"
 #include <cstddef>
 
 namespace dwarf
@@ -107,7 +107,7 @@ namespace dwarf
     {
         for (std::size_t i = 0; i < _attributeNameStringsCount; i++)
         {
-            if (_attributeNameStrings[i].enum_ == name) 
+            if (_attributeNameStrings[i].enum_ == name)
                 return _attributeNameStrings[i].string;
         }
         return nullptr;

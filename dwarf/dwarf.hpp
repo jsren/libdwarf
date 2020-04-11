@@ -1,36 +1,37 @@
 /* dwarf.h - (c) James S Renwick 2015-17 */
 #pragma once
 #include <cstddef>
-#include <stdint.h>
+#include <cstdint>
 #include <string.h>
 #include <memory>
+#include <array>
+#include <vector>
 #include <unordered_map>
-#include "const.h"
-#include "../array.h"
-#include "format.h"
+#include "const.hpp"
+#include "format.hpp"
 
 namespace dwarf
 {
     typedef signed long int error_t;
 
 
-	/* Reads an unsigned LEB value from the given buffer of the specified length. 
-	   Returns the number of bytes read. */
-	uint32_t uleb_read(const uint8_t data[], std::size_t length, uint32_t &value_out);
 	/* Reads an unsigned LEB value from the given buffer of the specified length.
 	   Returns the number of bytes read. */
-    uint32_t uleb_read(const uint8_t data[], std::size_t length, uint64_t &value_out);
+	std::uint32_t uleb_read(const std::uint8_t data[], std::size_t length, std::uint32_t &value_out);
+	/* Reads an unsigned LEB value from the given buffer of the specified length.
+	   Returns the number of bytes read. */
+    std::uint32_t uleb_read(const std::uint8_t data[], std::size_t length, std::uint64_t &value_out);
 
 	/* Reads a signed LEB value from the given buffer of the specified length.
 	   Returns the number of bytes read. */
-    uint32_t sleb_read(const uint8_t data[], std::size_t length, int32_t &value_out);
+    std::uint32_t sleb_read(const std::uint8_t data[], std::size_t length, std::int32_t &value_out);
 	/* Reads a signed LEB value from the given buffer of the specified length.
 	   Returns the number of bytes read. */
-    uint32_t sleb_read(const uint8_t data[], std::size_t length, int64_t &value_out);
+    std::uint32_t sleb_read(const std::uint8_t data[], std::size_t length, std::int64_t &value_out);
 
 
 
-    enum class SectionType : uint8_t
+    enum class SectionType : std::uint8_t
     {
         invalid,
         debug_info,
@@ -49,13 +50,13 @@ namespace dwarf
     struct DwarfSection
     {
         SectionType type = SectionType::invalid;
-        elf::Pointer<uint8_t[]> data{};
-        uint64_t size{};
+        std::unique_ptr<std::uint8_t[]> data{};
+        std::uint64_t size{};
 
     public:
         DwarfSection() = default;
 
-        inline DwarfSection(SectionType type, elf::Pointer<uint8_t[]> data, uint64_t size) noexcept
+        inline DwarfSection(SectionType type, std::unique_ptr<std::uint8_t[]> data, std::uint64_t size) noexcept
             : type(type), data(std::move(data)), size(size) { }
 
         explicit DwarfSection(const DwarfSection& other);
@@ -70,9 +71,9 @@ namespace dwarf
 
     struct DieIndexEntry
     {
-        uint64_t id;
+        std::uint64_t id;
         DIEType type;
-        uint64_t parentId;
+        std::uint64_t parentId;
         const char* name;
     };
 
@@ -80,7 +81,7 @@ namespace dwarf
     struct DieIndexIterator
     {
         Iter iter{};
-        uint64_t index{};
+        std::uint64_t index{};
 
         DieIndexIterator() = default;
         inline DieIndexIterator(const Iter& iter) : iter(iter) { }
@@ -137,12 +138,12 @@ namespace dwarf
     private:
         std::unique_ptr<CompilationUnitHeader> header{};
 
-        using EntryIndex = std::tuple<DIEType, uint64_t, const char*, std::size_t>;
-        std::unordered_map<uint64_t, std::size_t> abbreviationIndex{};
+        using EntryIndex = std::tuple<DIEType, std::uint64_t, const char*, std::size_t>;
+        std::unordered_map<std::uint64_t, std::size_t> abbreviationIndex{};
         std::vector<EntryIndex> entryIndex{};
 
     public:
-        const Array<DwarfSection> sections{0};
+        const std::vector<DwarfSection> sections{0};
 
 		const DwarfWidth width{};
 
@@ -150,13 +151,13 @@ namespace dwarf
             decltype(entryIndex.cend())> dieIndex{};
 
     public:
-		explicit DwarfContext(Array<DwarfSection>&& sections, DwarfWidth width);
+		explicit DwarfContext(std::vector<DwarfSection>&& sections, DwarfWidth width);
 
     public:
 
         error_t buildIndexes();
 
-        DebugInfoEntry dieFromId(uint64_t id);
+        DebugInfoEntry dieFromId(std::uint64_t id);
 
         const DwarfSection& operator[](SectionType type) const;
 

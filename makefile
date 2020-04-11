@@ -1,16 +1,17 @@
+GPP_FLAGS := -I. -std=c++17 -Wall -pedantic -O2 -Wno-unknown-pragmas -Wno-format
 
-SOURCES  := $(wildcard src/*.cpp)
-INCLUDES := -Iinc -I.
-LIBNAME  := libdwarf
+.PHONY: default build clean elf
 
-GPP_FLAGS := -std=c++17 -Wall -pedantic -O2 -Wno-unknown-pragmas
+default : elf dwarf
 
-default : build
-	
-build:
-	g++ $(GPP_FLAGS) $(INCLUDES) $(SOURCES) -o $(LIBNAME).elf
+elf: $(wildcard elf/*.cpp) $(wildcard elf/*.hpp)
+	g++ $(GPP_FLAGS) -fPIC $(wildcard elf/*.cpp) -shared -o libelf.so
+
+dwarf: $(wildcard dwarf/*.cpp) $(wildcard dwarf/*.hpp)
+	g++ $(GPP_FLAGS) -fPIC $(wildcard dwarf/*.cpp) -shared -o libdwarf.so
+
+example: elf example.cpp
+	g++ $(GPP_FLAGS) example.cpp libelf.o -o example
 
 clean:
-	rm -r *.o
-	rm -r *.elf
-	rm -r *.a
+	rm libelf.so libdwarf.so

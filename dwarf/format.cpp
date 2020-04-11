@@ -1,17 +1,14 @@
-/* format.cpp - (c) 2015-17 James S Renwick */
-#include "format.h"
-#include "platform.h"
-#include "dwarf.h"
-
+/* format.cpp - (c) 2015-17, 2020 James S Renwick */
 #include <vector>
-
+#include "format.hpp"
+#include "dwarf.hpp"
 
 namespace dwarf
 {
-    std::size_t readHeader(const uint8_t* buffer, std::size_t length, 
-        uint64_t& id_out, uint32_t& type_out)
+    std::size_t readHeader(const std::uint8_t* buffer, std::size_t length,
+        std::uint64_t& id_out, std::uint32_t& type_out)
     {
-        const uint8_t* origBuffer = buffer;
+        const std::uint8_t* origBuffer = buffer;
 
         // Read header
         auto size = dwarf::uleb_read(buffer, length, id_out);
@@ -24,14 +21,14 @@ namespace dwarf
     }
 
 
-    std::size_t skipChildren(const uint8_t* buffer, std::size_t length)
+    std::size_t skipChildren(const std::uint8_t* buffer, std::size_t length)
     {
-        const uint8_t* origBuffer = buffer;
+        const std::uint8_t* origBuffer = buffer;
 
         while (true)
         {
             // Skip header
-            uint64_t id; uint32_t type;
+            std::uint64_t id; std::uint32_t type;
             buffer += readHeader(buffer, length, id, type);
             if (id == 0) break;
 
@@ -41,7 +38,7 @@ namespace dwarf
             // Skip attributes
             while (true)
             {
-                uint32_t name, form;
+                std::uint32_t name, form;
                 buffer += dwarf::uleb_read(buffer, name);
                 buffer += dwarf::uleb_read(buffer, form);
                 if (name == 0 && form == 0) break;
@@ -56,14 +53,14 @@ namespace dwarf
     }
 
 
-    std::size_t countChildren(const uint8_t* buffer, std::size_t length, uint32_t& count_out)
+    std::size_t countChildren(const std::uint8_t* buffer, std::size_t length, std::uint32_t& count_out)
     {
-        const uint8_t* origBuffer = buffer;
+        const std::uint8_t* origBuffer = buffer;
 
         while (true)
         {
             // Skip header
-            uint64_t id; uint32_t type;
+            std::uint64_t id; std::uint32_t type;
             buffer += readHeader(buffer, length, id, type);
             if (id == 0) break;
 
@@ -73,7 +70,7 @@ namespace dwarf
             // Skip attributes
             while (true)
             {
-                uint32_t name, form;
+                std::uint32_t name, form;
                 buffer += dwarf::uleb_read(buffer, name);
                 buffer += dwarf::uleb_read(buffer, form);
                 if (name == 0 && form == 0) break;
@@ -89,14 +86,14 @@ namespace dwarf
     }
 
 
-    uint32_t DebugInfoAbbreviation::parse(const uint8_t* buffer, std::size_t length, 
+    std::uint32_t DebugInfoAbbreviation::parse(const std::uint8_t* buffer, std::size_t length,
         DebugInfoAbbreviation& entry_out)
     {
 		entry_out = DebugInfoAbbreviation{};
-		const uint8_t* origBuffer = buffer;
+		const std::uint8_t* origBuffer = buffer;
 
         // Read header
-        uint64_t id; uint32_t type;
+        std::uint64_t id; std::uint32_t type;
         auto size = readHeader(buffer, length, entry_out.id, type);
 		buffer += size; length -= size;
 
@@ -104,7 +101,7 @@ namespace dwarf
 		else entry_out.tag = static_cast<DIEType>(type);
 
         bool hasChildren = *(buffer++);
-        
+
         entry_out.attributeCount = 0;
         entry_out.attributeStart = buffer;
 
@@ -122,16 +119,16 @@ namespace dwarf
         // Handle child definitions
         if (hasChildren)
         {
-            uint32_t childCount; 
+            std::uint32_t childCount;
             auto size = countChildren(buffer, length, childCount);
 
             entry_out.childCount = childCount;
-            entry_out.childIDs = std::unique_ptr<uint64_t[]>(new uint64_t[childCount]);
+            entry_out.childIDs = std::unique_ptr<std::uint64_t[]>(new std::uint64_t[childCount]);
 
-            uint32_t i = 0;
+            std::uint32_t i = 0;
             while (true)
             {
-                uint64_t id; uint32_t type;
+                std::uint64_t id; std::uint32_t type;
                 auto size = readHeader(buffer, length, id, type);
 				buffer += size; length -= size;
 
@@ -144,11 +141,11 @@ namespace dwarf
 
 
 
-    uint32_t AttributeSpecification::parse(const uint8_t* buffer, std::size_t length, AttributeSpecification& att_out)
+    std::uint32_t AttributeSpecification::parse(const std::uint8_t* buffer, std::size_t length, AttributeSpecification& att_out)
 	{
-		const uint8_t* bufferStart = buffer;
+		const std::uint8_t* bufferStart = buffer;
 
-		uint32_t name, form;
+		std::uint32_t name, form;
 		auto size = dwarf::uleb_read(buffer, length, name);
 		buffer += size; length -= size;
 
@@ -202,7 +199,7 @@ namespace dwarf
 	}
 
 
-    uint32_t uleb_read(const uint8_t data[], std::size_t length, uint32_t &value_out)
+    std::uint32_t uleb_read(const std::uint8_t data[], std::size_t length, std::uint32_t &value_out)
     {
 		if (length == 0) { value_out = 0; return 0; }
 
@@ -211,19 +208,19 @@ namespace dwarf
         if ((data[0] & 0b10000000) == 0 || length == 1) return 1;
         else value_out &= 0b01111111;
 
-        value_out |= ((uint32_t)data[1] << 7);
+        value_out |= ((std::uint32_t)data[1] << 7);
         if ((data[1] & 0b10000000) == 0 || length == 2) return 2;
         else value_out &= ((0b01111111 << 7) | 0xFF);
 
-        value_out |= ((uint32_t)data[2] << 14);
+        value_out |= ((std::uint32_t)data[2] << 14);
         if ((data[2] & 0b10000000) == 0 || length == 3) return 3;
         else value_out &= ((0b01111111 << 14) | 0xFFFF);
 
-        value_out |= ((uint32_t)data[3] << 21);
+        value_out |= ((std::uint32_t)data[3] << 21);
         if ((data[3] & 0b10000000) == 0 || length == 4) return 4;
         else value_out &= ((0b01111111 << 21) | 0xFFFFFF);
 
-        value_out |= ((uint32_t)data[4] << 28);
+        value_out |= ((std::uint32_t)data[4] << 28);
         if ((data[4] & 0b10000000) == 0 || length == 5) return 5;
 
         // Consume any extra bytes
@@ -233,16 +230,16 @@ namespace dwarf
 		return 0; // This should never happen...
     }
 
-    uint32_t uleb_read(const uint8_t data[], size_t length, /*out*/ uint64_t &value_out)
+    std::uint32_t uleb_read(const std::uint8_t data[], std::size_t length, /*out*/ std::uint64_t &value_out)
     {
-        int32_t i = 0;
-        value_out = 0; // Zero 
-        
-        for (uint8_t shift = 0; i <= (uint8_t)sizeof(value_out) && i < length; shift += 7, i++)
+        std::int32_t i = 0;
+        value_out = 0; // Zero
+
+        for (std::uint8_t shift = 0; i <= (std::uint8_t)sizeof(value_out) && i < length; shift += 7, i++)
         {
-            value_out |= ((uint64_t)data[i] << shift);
+            value_out |= ((std::uint64_t)data[i] << shift);
             if ((data[i] & 0b10000000) == 0) return i + 1;
-            else value_out &= ~((uint64_t)(0b10000000 << shift));
+            else value_out &= ~((std::uint64_t)(0b10000000 << shift));
         }
 
         // Consume any extra bytes
@@ -251,12 +248,12 @@ namespace dwarf
     }
 
 
-    uint32_t sleb_read(const uint8_t data[], int32_t& value_out)
+    std::uint32_t sleb_read(const std::uint8_t data[], std::int32_t& value_out)
     {
 		throw "NotImplemented";
     }
 
-    uint32_t sleb_read(const uint8_t data[], /*out*/ int64_t& value_out)
+    std::uint32_t sleb_read(const std::uint8_t data[], /*out*/ std::int64_t& value_out)
     {
 		throw "NotImplemented";
     }

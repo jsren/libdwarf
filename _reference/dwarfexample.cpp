@@ -95,7 +95,7 @@
   struct s_srcfile_loc *pNext;     /* Next or NULL if end-of-list     */
   struct s_func_loc    *pFunHoC;   /* 1st Function in Source File     */
   struct s_func_loc    *pFunToC;   /* Last Function in Source File    */
-  const char           *pName;     /* Pointer to actual Name Text     */
+  const char           *pName;     /* std::unique_ptr to actual Name Text     */
   char                 *pMSnkName; /* Member Name in StringSink       */
   Elf32_Word            StabSOIdx; /* Stab Index value N_SOL          */
   short                 RefCnt;    /* number of references            */
@@ -119,7 +119,7 @@
   Elf32_Word           LLidxStab;  /* Stab Index value last N_SLINE   */
   Elf32_Word           FLidx;      /* DBG_Line Index 1st lineno       */
   Elf32_Word           LLidx;      /* DBG Line Index last lineno      */
-  const char          *pSymName;   /* Pointer to Symbol Name text     */
+  const char          *pSymName;   /* std::unique_ptr to Symbol Name text     */
   SrcFile_Loc         *pSrcLoc;    /* Associated Source File Entry    */
   char                *pFSnkName;  /* Function Name in StringSink     */
   char                *pCSnkName;  /* Class Name in StringSink        */
@@ -211,7 +211,7 @@ struct srcfilesdata {
 /*--------------------------------------------------------------------*
  *  DLLMap String Sink List Controls                                  *
  *--------------------------------------------------------------------*/
-    char                 *pList;       /* Pointer to List start       */
+    char                 *pList;       /* std::unique_ptr to List start       */
     long                  Size;        /* Size of List in bytes       */
     long                  CMax;        /* Maximum element count       */
     long                  CUsed;       /* Total Active and garbage    */
@@ -353,7 +353,7 @@ static long          UseSrcLoc=0;   /* SrcFile Locators in use       */
 /*--------------------------------------------------------------------*
  *  Build Resource control fields                                     *
  *--------------------------------------------------------------------*/
- static ENV_SFL_ResHeader *pResHdr=NULL; /* Pointer to Resource Hdr   */
+ static ENV_SFL_ResHeader *pResHdr=NULL; /* std::unique_ptr to Resource Hdr   */
  static long         BldResStg=0;   /* Size of Entire Resource        */
  static long         BldPayStg=0;   /* Size of Payload                */
  static long         BldHdrStg=0;   /* Size of Resource Header        */
@@ -563,7 +563,7 @@ const char * elf_string(Elf32_Word sec_index,
 	 if (stat(file, &file_stat) < 0 ||
 	     (file_fd = open(file, O_RDONLY)) < 0 ||
 	     (file_bytes = (unsigned char *) mmap((caddr_t)0,
-					    (size_t)file_stat.st_size,
+					    (std::size_t)file_stat.st_size,
 					    PROT_READ,
 					    MAP_PRIVATE,
 					    file_fd,
@@ -788,7 +788,7 @@ const char * elf_string(Elf32_Word sec_index,
 
 	 Exit_Map_Err:
 	 if (file_bytes != (unsigned char *)-1)
-	   munmap ((caddr_t)file_bytes, (size_t)file_stat.st_size);
+	   munmap ((caddr_t)file_bytes, (std::size_t)file_stat.st_size);
 	 if (file_fd >= 0) close (file_fd);
 	 return(errors);
 	}
@@ -838,7 +838,7 @@ void build_func_loc(Elf32_Shdr *sec_hdr,
        pFunLoc->SymCRC32 = crc32((const unsigned char *) pSymName,SymNameLen);
 
 	   //suchi for IA
-	   size_t length = 256;
+	   std::size_t length = 256;
 	   int status = 0;
 	   char* retname=0;
 	   if(status !=0 )
@@ -846,7 +846,7 @@ void build_func_loc(Elf32_Shdr *sec_hdr,
 	   //End 
        if (retname != NULL)  
          {
-          memcpy(pFunLoc->SName, retname, 163);
+          std::memcpy(pFunLoc->SName, retname, 163);
            free(retname);
           if (strchr(pFunLoc->SName,'~'))
             {
@@ -858,7 +858,7 @@ void build_func_loc(Elf32_Shdr *sec_hdr,
        {
           strncpy(pFunLoc->SName, pSymName, SymNameLen);
        }
-       memcpy((void *) &pFunLoc->SName[160],(void *) &pFunLoc->Soff,4);
+       std::memcpy((void *) &pFunLoc->SName[160],(void *) &pFunLoc->Soff,4);
 
        SoffFunLoc[FndFunLoc] = pFunLoc;
        CRC32FunLoc[FndFunLoc] = pFunLoc;
@@ -948,7 +948,7 @@ void build_resource_object(void)
      if ((pStrPtr2 = strchr(pFunLoc->SName,':')) != NULL)
        {
         LclLen = pStrPtr2 - pStrPtr1;
-        memcpy(LclCls,pStrPtr1,LclLen);
+        std::memcpy(LclCls,pStrPtr1,LclLen);
         LclCls[LclLen] = 0x00;
         pStrPtr2 += 2;
         if ((MyRet = ENV_DSnkString(LclCls,&pFunLoc->pCSnkName)) != PST_SUCCESS)
@@ -1074,12 +1074,12 @@ void build_resource_object(void)
  *  Copy the Linenumber array to the payload area.                    *
  *--------------------------------------------------------------------*/
  pResHdr->OffLine = PTROPR(long,pBldLin,-,pResHdr);
- memcpy(pBldLin,&DBGLines[0],BldLinStg);
+ std::memcpy(pBldLin,&DBGLines[0],BldLinStg);
 /*--------------------------------------------------------------------*
  *  Copy the String Table to the Payload Area                         *
  *--------------------------------------------------------------------*/
  pResHdr->OffStbl = PTROPR(long,pBldStr,-,pResHdr);
- memcpy(pBldStr,pStrTbl,BldStrStg);
+ std::memcpy(pBldStr,pStrTbl,BldStrStg);
 
  return;
 }
@@ -1273,7 +1273,7 @@ int CmpLineNum(const void *a, const void *b)
  *  Force the following functions to be generated as inline           *
  *  instructions rather than function calls                           *
  *--------------------------------------------------------------------*/
-#pragma intrinsic(memcpy,memset,strcmp,strlen)
+#pragma intrinsic(std::memcpy,memset,strcmp,strlen)
 /*--------------------------------------------------------------------*
  * FUNCTION NAME = EnvSinkInit                                        *
  *                                                                    *
@@ -1339,7 +1339,7 @@ short      ENV_DSnkInit(void)
  *            added string value or the ptr to an existing instance.  *
  *                                                                    *
  * INPUTS:    char    Zero-terminated text string to add              *
- *            char ** Pointer to Pointer to hold returned Sink        *
+ *            char ** std::unique_ptr to std::unique_ptr to hold returned Sink        *
  *                    Text value pointer                              *
  *                                                                    *
  * OUTPUTS: Return Code that describes result of operation            *
@@ -1400,7 +1400,7 @@ short      ENV_DSnkString   (char *Txtval,
       TLen = strlen(Txtval)+1;
       if ((pDsc->pCOSink + TLen) > pDsc->pEOSink) goto ServNOSPCerr;
 /*--------------------------------------------------------------------*
- *  Return Pointer is Current Sink Byte. New Current = Current + Len  *
+ *  Return std::unique_ptr is Current Sink Byte. New Current = Current + Len  *
  *--------------------------------------------------------------------*/
       pSnkStr = pDsc->pCOSink;
       pDsc->pCOSink = PTROPR(char *,         /* Cast Type             */
@@ -1410,7 +1410,7 @@ short      ENV_DSnkString   (char *Txtval,
 /*--------------------------------------------------------------------*
  *  Move text to proper slot                                          *
  *--------------------------------------------------------------------*/
-      memcpy(pSnkStr,Txtval,TLen);     /* Copy the input string       */
+      std::memcpy(pSnkStr,Txtval,TLen);     /* Copy the input string       */
       pDsc->BlkUsed += TLen;           /* Update used space size      */
       *ppSinkval = pSnkStr;            /* Set for caller              */
 /*--------------------------------------------------------------------*
@@ -1468,7 +1468,7 @@ short      ENV_DSnkString   (char *Txtval,
                          pDsc->pList,
                          +,
                         (pDsc->EStart*sizeof(ENV_DllListEle)));
-        memcpy(pMoveT,pMoveS,MoveL);   /* Open up a free slot         */
+        std::memcpy(pMoveT,pMoveS,MoveL);   /* Open up a free slot         */
         pSse = --pSse;
         pSse->pSText = pSnkStr;
         pSse->UseCnt = 1;
@@ -1503,7 +1503,7 @@ short      ENV_DSnkString   (char *Txtval,
  *                                                                    *
  * INPUTS:    char    Zero-terminated text string to verify           *
  *            long  * Variable to return Found Index subscript        *
- *            char ** Pointer to Pointer to hold returned Sink        *
+ *            char ** std::unique_ptr to std::unique_ptr to hold returned Sink        *
  *                    Text value pointer                              *
  *            char ** List insert or active element for string        *
  *                                                                    *
@@ -1859,11 +1859,11 @@ int process_subprogram(Dwarf_Debug dbg,Dwarf_Addr lowpc1,Dwarf_Addr highpc1,
 		if(LinkNameGot){ 
 
 		   SymDescLen = strlen(*HPLinkagename);
-		   memcpy(StrText,*HPLinkagename,SymDescLen);
+		   std::memcpy(StrText,*HPLinkagename,SymDescLen);
 		}
 		else{ // use the actual function name
 			SymDescLen = strlen(*name);
-			memcpy(StrText,*name,SymDescLen);
+			std::memcpy(StrText,*name,SymDescLen);
 
 		}
 	/*------------------------------------------------------------------------*
@@ -1980,7 +1980,7 @@ int process_subprogram(Dwarf_Debug dbg,Dwarf_Addr lowpc1,Dwarf_Addr highpc1,
 				  if (pSrc1st == NULL) pSrc1st = pSrcLoc;
 	              else pSrcPrv->pNext = pSrcLoc;
 		          pSrcLoc->SrcIdx = UseSrcLoc++;
-				  memcpy(pSrcLoc->MemName,pFileName,len);
+				  std::memcpy(pSrcLoc->MemName,pFileName,len);
 	            }
 				if (pSrcLoc->pFunHoC == NULL) pSrcLoc->pFunHoC = pFunLoc;
 

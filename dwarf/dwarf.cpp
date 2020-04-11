@@ -1,27 +1,28 @@
-#include "dwarf.h"
-#include "format.h"
+#include "dwarf.hpp"
+#include "format.hpp"
+#include <cstring>
 
 namespace dwarf
 {
 
     SectionType SectionTypeFromString(const char* name)
     {
-        if (strcmp(name, ".debug_info") == 0) {
+        if (std::strcmp(name, ".debug_info") == 0) {
             return dwarf::SectionType::debug_info;
         }
-        else if (strcmp(name, ".debug_abbrev") == 0) {
+        else if (std::strcmp(name, ".debug_abbrev") == 0) {
             return dwarf::SectionType::debug_abbrev;
         }
-        else if (strcmp(name, ".debug_aranges") == 0) {
+        else if (std::strcmp(name, ".debug_aranges") == 0) {
             return dwarf::SectionType::debug_aranges;
         }
-        else if (strcmp(name, ".debug_ranges") == 0) {
+        else if (std::strcmp(name, ".debug_ranges") == 0) {
             return dwarf::SectionType::debug_ranges;
         }
-        else if (strcmp(name, ".debug_line") == 0) {
+        else if (std::strcmp(name, ".debug_line") == 0) {
             return dwarf::SectionType::debug_line;
         }
-        else if (strcmp(name, ".debug_str") == 0) {
+        else if (std::strcmp(name, ".debug_str") == 0) {
             return dwarf::SectionType::debug_str;
         }
         else return SectionType::invalid;
@@ -35,8 +36,8 @@ namespace dwarf
     {
         if (other.data.ownsData())
         {
-            data.reset(new uint8_t[size], true);
-            memcpy(this->data.get(), other.data.get(), size);
+            data.reset(new std::uint8_t[size], true);
+            std::memcpy(this->data.get(), other.data.get(), size);
         }
         else data.reset(other.data.get(), false);
     }
@@ -46,8 +47,8 @@ namespace dwarf
         if (this == &other) return *this;
 
         type = other.type; size = other.size;
-        data.reset(new uint8_t[size], true);
-        memcpy(this->data.get(), other.data.get(), size);
+        data.reset(new std::uint8_t[size], true);
+        std::memcpy(this->data.get(), other.data.get(), size);
 
         return *this;
     }
@@ -56,8 +57,8 @@ namespace dwarf
     {
         static const DwarfSection invalidSection;
 
-        for (auto& section : sections) { 
-            if (section.type == type) return section; 
+        for (auto& section : sections) {
+            if (section.type == type) return section;
         }
         return invalidSection;
     }
@@ -67,39 +68,39 @@ namespace dwarf
 
     // Returns -1 upon error, will advance valueData ptr to start of value
     // 'addressSize', 'dwarfWidth' should be 4 or 8
-	std::size_t attributeSize(const AttributeSpecification& attr, std::size_t addressSize, 
-		uint8_t dwarfWidth, const uint8_t*& value, std::size_t valueLength)
+	std::size_t attributeSize(const AttributeSpecification& attr, std::size_t addressSize,
+		std::uint8_t dwarfWidth, const std::uint8_t*& value, std::size_t valueLength)
     {
         switch (attr.form) {
             // AttributeClass::Address
             case AttributeForm::Address: return addressSize;
             // AttributeClass::Block
             case AttributeForm::Block1: return *(value++);
-            case AttributeForm::Block2: { uint16_t size; memcpy(&size, value, 2); value += 2; return size; }
-            case AttributeForm::Block4: { uint32_t size; memcpy(&size, value, 4); value += 4; return size; }
-            case AttributeForm::Block:  { uint64_t size; value += uleb_read(value, valueLength, size); return size; }
+            case AttributeForm::Block2: { std::uint16_t size; std::memcpy(&size, value, 2); value += 2; return size; }
+            case AttributeForm::Block4: { std::uint32_t size; std::memcpy(&size, value, 4); value += 4; return size; }
+            case AttributeForm::Block:  { std::uint64_t size; value += uleb_read(value, valueLength, size); return size; }
             // AttributeClass::Constant
             case AttributeForm::Data1: return 1;
             case AttributeForm::Data2: return 2;
             case AttributeForm::Data4: return 4;
             case AttributeForm::Data8: return 8;
-            case AttributeForm::SData: { uint64_t _; return uleb_read(value, valueLength, _); }
-            case AttributeForm::UData: { uint64_t _; return uleb_read(value, valueLength, _); }
+            case AttributeForm::SData: { std::uint64_t _; return uleb_read(value, valueLength, _); }
+            case AttributeForm::UData: { std::uint64_t _; return uleb_read(value, valueLength, _); }
             // AttributeClass::ExprLoc
             case AttributeForm::ExprLoc:
-                { uint64_t size; value += uleb_read(value, valueLength, size); return size; }
+                { std::uint64_t size; value += uleb_read(value, valueLength, size); return size; }
             // AttributeClass::Flag
             case AttributeForm::Flag: return 1;
             case AttributeForm::FlagPresent: return 0;
             // AttributeClass::SectionPointer
             case AttributeForm::SecOffset: return dwarfWidth;
             // AttributeClass::UnitReference
-            case AttributeForm::Ref1: return 1; 
+            case AttributeForm::Ref1: return 1;
             case AttributeForm::Ref2: return 2;
             case AttributeForm::Ref4: return 4;
             case AttributeForm::Ref8: return 8;
-            case AttributeForm::RefUData: { uint64_t _; return uleb_read(value, valueLength, _); }
-            case AttributeForm::RefSig8: return 8; 
+            case AttributeForm::RefUData: { std::uint64_t _; return uleb_read(value, valueLength, _); }
+            case AttributeForm::RefSig8: return 8;
             // AttributeClass::Reference
             case AttributeForm::RefAddr: return dwarfWidth;
             // AttributeClass::String
@@ -110,20 +111,20 @@ namespace dwarf
         return static_cast<std::size_t>(-1);
     }
 
-	
-	extern std::size_t readHeader(const uint8_t* buffer, std::size_t length,
-		uint64_t& id_out, uint32_t& type_out);
+
+	extern std::size_t readHeader(const std::uint8_t* buffer, std::size_t length,
+		std::uint64_t& id_out, std::uint32_t& type_out);
 
 
-    static class DebugEntryParser
+    class DebugEntryParser
     {
     public:
-        static uint32_t nextAbbreviation(const uint8_t* buffer, std::size_t length, 
-            uint64_t& abbrevID_out)
+        static std::uint32_t nextAbbreviation(const std::uint8_t* buffer, std::size_t length,
+            std::uint64_t& abbrevID_out)
         {
-            const uint8_t* origBuffer = buffer;
+            const std::uint8_t* origBuffer = buffer;
 
-            uint32_t tag = 0;
+            std::uint32_t tag = 0;
             bool hasChildren = false;
 
             // Read header
@@ -149,11 +150,11 @@ namespace dwarf
         }
 
 
-        static uint32_t nextDIE(const uint8_t* buffer, std::size_t length,
-            const DwarfContext& context, uint64_t& abbrevID_out, 
+        static std::uint32_t nextDIE(const std::uint8_t* buffer, std::size_t length,
+            const DwarfContext& context, std::uint64_t& abbrevID_out,
             DIEType& type_out, const char*& name_out, bool& hasChildren_out)
         {
-            const uint8_t* origBuffer = buffer;
+            const std::uint8_t* origBuffer = buffer;
 
             hasChildren_out = false;
             name_out = nullptr;
@@ -170,11 +171,11 @@ namespace dwarf
 
             // Get abbreviation data from index
             auto index = context.abbreviationIndex.at(abbrevID_out);
-            const uint8_t* origAbbrevData = debug_abbrev.data.get();
-            const uint8_t* abbrevData = origAbbrevData + index;
+            const std::uint8_t* origAbbrevData = debug_abbrev.data.get();
+            const std::uint8_t* abbrevData = origAbbrevData + index;
 
             // Read abbreviation header
-			uint64_t _; uint32_t tag;
+			std::uint64_t _; std::uint32_t tag;
 			abbrevData += readHeader(abbrevData, debug_abbrev.size - (abbrevData - origAbbrevData), _, tag);
             type_out = static_cast<DIEType>(tag);
 
@@ -193,11 +194,11 @@ namespace dwarf
                 if (attr.name == AttributeName::None &&
                     attr.form == AttributeForm::None) break;
 
-                // Get attribute size 
+                // Get attribute size
                 auto size = attributeSize(attr, context.unitHeader().addressSize(),
 					context.width == DwarfWidth::Bits64 ? 8 : 4, buffer, length);
 
-                if (size == static_cast<std::size_t>(-1)) return static_cast<uint32_t>(-1);
+                if (size == static_cast<std::size_t>(-1)) return static_cast<std::uint32_t>(-1);
 
                 // Pull out 'name' attribute value
                 if (attr.name == AttributeName::Name)
@@ -210,8 +211,8 @@ namespace dwarf
                         auto& debug_str = context[SectionType::debug_str];
                         if (debug_str)
                         {
-                            uint64_t offset = 0;
-                            memcpy(&offset, buffer, size);
+                            std::uint64_t offset = 0;
+                            std::memcpy(&offset, buffer, size);
                             name_out = reinterpret_cast<const char*>(debug_str.data.get() + offset);
                         }
                     }
@@ -224,14 +225,14 @@ namespace dwarf
         }
 
 
-        static std::size_t parseDIEChain(const uint8_t* buffer, std::size_t bufferSize, 
-            DwarfContext& context, const uint8_t* sectionStart, uint64_t parentDIE)
+        static std::size_t parseDIEChain(const std::uint8_t* buffer, std::size_t bufferSize,
+            DwarfContext& context, const std::uint8_t* sectionStart, std::uint64_t parentDIE)
         {
-            const uint8_t* bufferStart = buffer;
+            const std::uint8_t* bufferStart = buffer;
             while (true)
             {
                 // Parse next DIE
-                uint64_t abbrevID; DIEType dietype; const char* name; bool hasChildren;
+                std::uint64_t abbrevID; DIEType dietype; const char* name; bool hasChildren;
                 auto size = nextDIE(buffer, bufferSize, context, abbrevID, dietype, name, hasChildren);
 
                 // Update buffer view
@@ -265,13 +266,13 @@ namespace dwarf
 
             // Index abbreviation table - this must be done first
             {
-                const uint8_t* buffer = debug_abbrev.data.get();
-                uint32_t bufferSize = debug_abbrev.size;
+                const std::uint8_t* buffer = debug_abbrev.data.get();
+                std::uint32_t bufferSize = debug_abbrev.size;
 
                 while (true)
                 {
                     // Parse next abbreviation
-                    uint64_t abbrevID;
+                    std::uint64_t abbrevID;
                     auto size = nextAbbreviation(buffer, bufferSize, abbrevID);
                     if (abbrevID == 0) break;
 
@@ -286,11 +287,11 @@ namespace dwarf
 
             // Index debug info entry table
             {
-                const uint8_t* buffer = debug_info.data.get();
-                uint32_t bufferSize = debug_info.size;
+                const std::uint8_t* buffer = debug_info.data.get();
+                std::uint32_t bufferSize = debug_info.size;
 
                 // Skip past program header
-				auto headerSize = context.width == DwarfWidth::Bits64 ? 
+				auto headerSize = context.width == DwarfWidth::Bits64 ?
 					sizeof(CompilationUnitHeader64) : sizeof(CompilationUnitHeader32);
 
                 buffer += headerSize; bufferSize -= headerSize;
@@ -301,7 +302,7 @@ namespace dwarf
         }
 
 
-        static DebugInfoEntry dieFromId(uint64_t id, DwarfContext& context)
+        static DebugInfoEntry dieFromId(std::uint64_t id, DwarfContext& context)
         {
             auto& index = context.entryIndex[id];
             auto offset = std::get<3>(index);
@@ -309,37 +310,37 @@ namespace dwarf
             auto& debug_info = context[SectionType::debug_info];
             auto& debug_abbrev = context[SectionType::debug_abbrev];
 
-            const uint8_t* origBuffer = debug_info.data.get() + offset;
-            const uint8_t* buffer = origBuffer;
+            const std::uint8_t* origBuffer = debug_info.data.get() + offset;
+            const std::uint8_t* buffer = origBuffer;
             std::size_t length = debug_info.size - offset;
 
-            const uint8_t* origAbbrevData = debug_abbrev.data.get();
-            const uint8_t* abbrevData = origAbbrevData;
+            const std::uint8_t* origAbbrevData = debug_abbrev.data.get();
+            const std::uint8_t* abbrevData = origAbbrevData;
 
 
             // Parse abbreviation no.
-            uint64_t abbrevId;
+            std::uint64_t abbrevId;
             auto size = uleb_read(buffer, length, abbrevId);
 			buffer += size; length -= size;
-        
+
             // Get offset into abbreviation table
             auto abbrev_offset = context.abbreviationIndex[abbrevId];
 			auto abbrevLength = debug_abbrev.size - abbrev_offset;
 			abbrevData += abbrev_offset;
 
             // Skip abbreviation header
-			uint64_t _; uint32_t _1;
+			std::uint64_t _; std::uint32_t _1;
 			size = readHeader(abbrevData, abbrevLength, _, _1);
 			abbrevData += size; abbrevLength -= size;
             abbrevData++;
 
             // Count attributes
-            uint32_t attrCount = 0;
-            const uint8_t* tmpBuff = abbrevData;
+            std::uint32_t attrCount = 0;
+            const std::uint8_t* tmpBuff = abbrevData;
 			auto tmpLength = abbrevLength;
             while (true)
             {
-                uint32_t name, form;
+                std::uint32_t name, form;
 
 				auto size = dwarf::uleb_read(tmpBuff, tmpLength, name);
 				tmpBuff += size; tmpLength -= size;
@@ -360,7 +361,7 @@ namespace dwarf
             entry.attributes = std::unique_ptr<Attribute[]>(new Attribute[attrCount]);
 
             // Handle attributes
-            uint32_t attrIndex = 0;
+            std::uint32_t attrIndex = 0;
             while (true)
             {
                 // Read abbreviation attribute specifications
@@ -372,7 +373,7 @@ namespace dwarf
                 if (attr.name == AttributeName::None &&
                     attr.form == AttributeForm::None) break;
 
-                // Get attribute size 
+                // Get attribute size
                 std::size_t size = attributeSize(attr, context.unitHeader().addressSize(),
                     context.width == DwarfWidth::Bits64 ? 8 : 4, buffer, length);
 
@@ -391,18 +392,18 @@ namespace dwarf
 
 
 
-	DwarfContext::DwarfContext(Array<DwarfSection>&& sections, DwarfWidth width) :
+	DwarfContext::DwarfContext(std::vector<DwarfSection>&& sections, DwarfWidth width) :
 		sections(std::move(sections)), width(width)
 	{
 		// Copy compilation unit header from debug_info section, if found
 		for (auto& section : this->sections) if (section.type == SectionType::debug_info)
 		{
 			if (width == DwarfWidth::Bits32) {
-				CompilationUnitHeader32 header; memcpy(&header, section.data.get(), sizeof(header));
+				CompilationUnitHeader32 header; std::memcpy(&header, section.data.get(), sizeof(header));
 				this->header.reset(new _detail::CompilationUnitHeader32(header));
 			}
 			else {
-				CompilationUnitHeader64 header; memcpy(&header, section.data.get(), sizeof(header));
+				CompilationUnitHeader64 header; std::memcpy(&header, section.data.get(), sizeof(header));
 				this->header.reset(new _detail::CompilationUnitHeader64(header));
 			}
 			break;
@@ -419,7 +420,7 @@ namespace dwarf
     }
 
 
-    DebugInfoEntry DwarfContext::dieFromId(uint64_t id)
+    DebugInfoEntry DwarfContext::dieFromId(std::uint64_t id)
     {
         return DebugEntryParser::dieFromId(id, *this);
     }

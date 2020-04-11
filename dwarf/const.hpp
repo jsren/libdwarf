@@ -1,12 +1,12 @@
-/* const.h - (c) James S Renwick 2015 */
+/* const.h - (c) James S Renwick 2015, 2020 */
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 namespace dwarf
 {
     // Tags
-    enum class DIEType : uint16_t
+    enum class DIEType : std::uint16_t
     {
         None                = 0x00,
         ArrayType           = 0x01,
@@ -71,12 +71,12 @@ namespace dwarf
         TemplateAlias       = 0x43
     };
 
-    enum class AttributeName : uint16_t
+    enum class AttributeName : std::uint16_t
     {
         None               = 0x0,
         AbstractOrigin     = 0x31, // Instance of inline subprogram
         Accessibility      = 0x32, // C++ declarations, base classes & inherited members
-        AddressClass       = 0x33, // Pointer or reference or function ptr type
+        AddressClass       = 0x33, // std::unique_ptr or reference or function ptr type
         Allocated          = 0x4E, // Allocation status of type
         Artificial         = 0x34, // Marks an object or type not actually declared in the source
         Associated         = 0x4F, // Association status
@@ -97,7 +97,7 @@ namespace dwarf
         ConstExpr          = 0x6C, // Compile-time constant object or function
         ContainingType     = 0x1D, // Containing type of pointer-to-member type
         Count              = 0x37, // Elements of subrange type
-        DataBitOffset      = 0x6B, // 
+        DataBitOffset      = 0x6B, //
         DataLocation       = 0x50, // Indirection to actual data
         DataMemberLocation = 0x38, // Data member & inherited member location
         DecimalScale       = 0x5C, // Decimal scale factor
@@ -138,7 +138,7 @@ namespace dwarf
         Name               = 0x03, // Name of declaration or path name of compilation source
         NamelistItem       = 0x44, // Namelist item
         ObjectPointer      = 0x64, // Object (this, self) pointer of member interface
-        Ordering           = 0x09, // Array row/column ordering 
+        Ordering           = 0x09, // Array row/column ordering
         PictureString      = 0x60, // Picture string for numeric string type
         Priority           = 0x45, // Module priority
         Producer           = 0x25, // Compiler identification
@@ -216,7 +216,7 @@ namespace dwarf
         ExprLoc
     };
 
-    enum class BaseType : uint8_t
+    enum class BaseType : std::uint8_t
     {
         Address        = 0x01,
         Boolean        = 0x02,
@@ -236,44 +236,44 @@ namespace dwarf
         UTF            = 0x10
     };
 
-    enum class DecimalSign : uint8_t
+    enum class DecimalSign : std::uint8_t
     {
         Unsigned          = 0x01, // Unsigned
         LeadingOverpunch  = 0x02, // Sign is encoded in the most significant digit in a target-dependent manner
         TrailingOverpunch = 0x03, // Sign is encoded in the least significant digit in a target-dependent manner
         LeadingSeparate   = 0x04, // Sign is a '+' or '-' character to the left of the most significant digit
-        TrailingSeparate  = 0x05  // Sign is a ‘+’ or ‘-’ character to the right of the least significant digit
+        TrailingSeparate  = 0x05  // Sign is a ï¿½+ï¿½ or ï¿½-ï¿½ character to the right of the least significant digit
     };
 
-    enum class Endianness : uint8_t  // Dubbed "endianity" in spec
+    enum class Endianness : std::uint8_t  // Dubbed "endianity" in spec
     {
         Default = 0x00,
         Big     = 0x01,
         Little  = 0x02
     };
 
-    enum class Accessibility : uint8_t
+    enum class Accessibility : std::uint8_t
     {
         Public    = 0x01,
         Protected = 0x02,
         Private   = 0x03
     };
 
-    enum class Visibility : uint8_t
+    enum class Visibility : std::uint8_t
     {
         Local     = 0x01,
         Exported  = 0x02,
         Qualified = 0x03
     };
 
-    enum class Virtuality : uint8_t
+    enum class Virtuality : std::uint8_t
     {
         None        = 0x00,
         Virtual     = 0x01,
         PureVirtual = 0x02
     };
 
-    enum class Language : uint16_t
+    enum class Language : std::uint16_t
     {
         C89          = 0x00,
         C            = 0x02,
@@ -297,7 +297,7 @@ namespace dwarf
         Python       = 0x14
     };
 
-    enum class IdentifierCase : uint8_t
+    enum class IdentifierCase : std::uint8_t
     {
         CaseSensitive   = 0x00,
         UpCase          = 0x01,
@@ -305,34 +305,34 @@ namespace dwarf
         CaseInsensitive = 0x03
     };
 
-    enum class CallingConvention : uint8_t
+    enum class CallingConvention : std::uint8_t
     {
         Normal  = 0x01,
         Program = 0x02,
         Nocall  = 0x03
     };
 
-    enum class Inlining : uint8_t
+    enum class Inlining : std::uint8_t
     {
         NotInlined         = 0x00, // Not declared inline nor inlined by the compiler
-        Inlined            = 0x01, // Not declared inline but inlined by the compiler 
-        DeclaredNotInlined = 0x02, // Declared inline but not inlined by the compiler 
+        Inlined            = 0x01, // Not declared inline but inlined by the compiler
+        DeclaredNotInlined = 0x02, // Declared inline but not inlined by the compiler
         DeclaredInlined    = 0x03  // Declared inline and inlined by the compiler
     };
 
-    enum class ArrayOrdering : uint8_t
+    enum class ArrayOrdering : std::uint8_t
     {
         RowMajor = 0x0,
         ColMajor = 0x1
     };
 
-    enum class DiscriminantList : uint8_t
+    enum class DiscriminantList : std::uint8_t
     {
         Label = 0x0,
         Range = 0x1
     };
 
-    enum class MacroInfoType : uint8_t
+    enum class MacroInfoType : std::uint8_t
     {
         Define    = 0x01,
         Undef     = 0x02,
@@ -341,7 +341,7 @@ namespace dwarf
         VendorExt = 0xFF
     };
 
-    enum class OpCode : uint8_t
+    enum class OpCode : std::uint8_t
     {
         Address = 0x03,
         Deref   = 0x06,
@@ -475,7 +475,7 @@ namespace dwarf
 
 
     /* Opcodes used in line number calculation */
-    enum class LineOpCode : uint8_t
+    enum class LineOpCode : std::uint8_t
     {
         Copy             = 0x01,
         AdvancePC        = 0x02,
@@ -492,7 +492,7 @@ namespace dwarf
     };
 
     /* Extended opcodes used in line number calculation */
-    enum class LineOpCodeEx : uint8_t
+    enum class LineOpCodeEx : std::uint8_t
     {
         EndSequence      = 0x01,
         SetAddress       = 0x02,
